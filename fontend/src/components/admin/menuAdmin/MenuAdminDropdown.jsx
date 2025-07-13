@@ -25,7 +25,7 @@ const MenuAdminDropdown = [
     icon: <PackageSearch />,
     sub: [
       { name: "ສິນຄ້າ", icon: <PackageSearch />, path: "/admin/product" },
-      { name: "ປະເພດສິນຄ້າ", icon: <Boxes />, path: "/admin/category" },
+      { name: "ແບນ", icon: <Boxes />, path: "/admin/brands" },
       { name: "ຫົວໜ່ວຍສິນຄ້າ", icon: <Combine />, path: "/admin/Unit" },
       { name: "ຜູ້ສະໜອງ", icon: <Container />, path: "/admin/supplier" },
       { name: "ສາງສິນຄ້າ", icon: <Warehouse />, path: "/admin/warehouse" },

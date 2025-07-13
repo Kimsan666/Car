@@ -4,22 +4,35 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { login } from "../api/auth";
 import _ from "lodash";
 import { toast } from "react-toastify";
+import { listCustomers } from "../api/Customer";
+import { listBrands } from "../api/Brand";
 
 const carStore = (set, get) => ({
   user: null,
   token: null,
   // categories: [],
+  customers: [],
 
-  // getCategory: async () => {
-  //   try {
-  //     const res = await listCategory();
-  //     set({
-  //       categories: res.data,
-  //     });
-  //   } catch (err) {
-  //     console.log(err);
-  //   }
-  // },
+  getBrand: async () => {
+    try {
+      const res = await listBrands();
+      set({
+        brands: res.data,
+      });
+    } catch (err) {
+      console.log(err);
+    }
+  },
+  getCustomer: async () => {
+    try {
+      const res = await listCustomers();
+      set({
+        customers: res.data,
+      });
+    } catch (err) {
+      console.log(err);
+    }
+  },
 
   actionLogout: () => {
     set({
