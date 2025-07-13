@@ -16,7 +16,7 @@ import {
   PanelTopOpen,
   CircleUserRound,
   SquareUser,
-  ShoppingBag ,
+  ShoppingBag,
 } from "lucide-react";
 
 const MenuAdminDropdown = [
@@ -26,9 +26,9 @@ const MenuAdminDropdown = [
     sub: [
       { name: "ສິນຄ້າ", icon: <PackageSearch />, path: "/admin/product" },
       { name: "ແບນ", icon: <Boxes />, path: "/admin/brands" },
-      { name: "ຫົວໜ່ວຍສິນຄ້າ", icon: <Combine />, path: "/admin/Unit" },
-      { name: "ຜູ້ສະໜອງ", icon: <Container />, path: "/admin/supplier" },
-      { name: "ສາງສິນຄ້າ", icon: <Warehouse />, path: "/admin/warehouse" },
+      { name: "ສີ", icon: <Combine />, path: "/admin/colors" },
+      { name: "ປະເພດ", icon: <Container />, path: "/admin/types" },
+      { name: "ລຸ້ນຂອງແບນ", icon: <Warehouse />, path: "/admin/models" },
       { name: "ສະຕອກສິນຄ້າ", icon: <Package />, path: "/admin/warehousestock" },
       { name: "ພະນັກງານ", icon: <SquareUser />, path: "/admin/employee" },
       {
@@ -37,11 +37,14 @@ const MenuAdminDropdown = [
         path: "/admin/datauser",
       },
       { name: "ລູກຄ້າ", icon: <Package />, path: "/admin/customers" },
-      { name: "ສິນຄ້າຂອງຜູ້ສະໜອງ", icon: <Package />, path: "/admin/supplier-products" },
-     
+      {
+        name: "ສິນຄ້າຂອງຜູ້ສະໜອງ",
+        icon: <Package />,
+        path: "/admin/supplier-products",
+      },
     ],
   },
-  
+
   {
     name: "ສັ່ງຊື້ສິນຄ້າ",
     icon: <Ambulance />,
@@ -54,7 +57,7 @@ const MenuAdminDropdown = [
   },
   {
     name: "ເບີກສິນຄ້າອອກ",
-    icon: <ShoppingBag  />,
+    icon: <ShoppingBag />,
     path: "/user",
   },
   {

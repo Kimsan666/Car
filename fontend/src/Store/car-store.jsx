@@ -6,13 +6,38 @@ import _ from "lodash";
 import { toast } from "react-toastify";
 import { listCustomers } from "../api/Customer";
 import { listBrands } from "../api/Brand";
+import { listColors } from "../api/Color";
+import { listTypes } from "../api/Type";
 
 const carStore = (set, get) => ({
   user: null,
   token: null,
   // categories: [],
   customers: [],
+  brands: [],
+  colors: [],
+  types: [],
 
+  getType: async () => {
+    try {
+      const res = await listTypes();
+      set({
+        types: res.data,
+      });
+    } catch (err) {
+      console.log(err);
+    }
+  },
+  getColor: async () => {
+    try {
+      const res = await listColors();
+      set({
+        colors: res.data,
+      });
+    } catch (err) {
+      console.log(err);
+    }
+  },
   getBrand: async () => {
     try {
       const res = await listBrands();
@@ -44,7 +69,7 @@ const carStore = (set, get) => ({
       // currentPurchaseOrder: null,
       // currentWarehouseId: null,
     });
-    localStorage.removeItem("car-storage"); 
+    localStorage.removeItem("car-storage");
   },
   actionLogin: async (form) => {
     const res = await login(form);
