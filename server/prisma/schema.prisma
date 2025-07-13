@@ -1,0 +1,268 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Employee {
+  id          Int       @id @default(autoincrement())
+  firstName   String?
+  lastName    String?
+  email       String    @unique
+  village     String?
+  city        String?
+  province    String?
+  position    String?
+  dateOfBirth DateTime?
+  status      String    @default("Working")
+  enabled     Boolean   @default(true)
+  user        User?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now())
+}
+
+model User {
+  id         Int        @id @default(autoincrement())
+  username   String     @unique
+  password   String
+  role       String     @default("user")
+  enabled    Boolean    @default(true)
+  employee   Employee?  @relation(fields: [employeeId], references: [id], onUpdate: SetNull)
+  employeeId Int?       @unique
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @default(now())
+  Order      Order[]
+  Purchase   Purchase[]
+  InputCar   InputCar[]
+}
+
+model Customer {
+  id              Int      @id @default(autoincrement())
+  fname           String
+  lname           String
+  number          String
+  email           String   @unique
+  address         String?
+  enabled         Boolean  @default(true)
+  numberDocuments String
+  documentsType   String
+  images          Image[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now())
+  Order           Order[]
+}
+
+model Image {
+  id         Int       @id @default(autoincrement())
+  asset_id   String
+  public_id  String
+  url        String
+  secure_url String
+  car        Car?      @relation(fields: [carId], references: [id], onDelete: Cascade)
+  carId      Int?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @default(now())
+  Customer   Customer? @relation(fields: [customerId], references: [id])
+  customerId Int?
+}
+
+model Imaged {
+  id         Int      @id @default(autoincrement())
+  asset_id   String
+  public_id  String
+  url        String
+  secure_url String
+  car        Car?     @relation(fields: [carId], references: [id], onDelete: Cascade)
+  carId      Int?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now())
+}
+
+model Car {
+  id               Int               @id @default(autoincrement())
+  brandAndModels   BrandAndModels?   @relation(fields: [brandAndModelsId], references: [id])
+  brandAndModelsId Int?
+  name             String?
+  licensePlate     String            @unique
+  year             Int?
+  colorCar         ColorCar?         @relation(fields: [colorCarId], references: [id])
+  colorCarId       Int?
+  vin              String?           @unique
+  engineNumber     String?
+  typecar          TypeCar?          @relation(fields: [typeId], references: [id])
+  typeId           Int?
+  status           String            @default("Available")
+  price            Float
+  costPrice        Float
+  description      String?
+  supplierProducts SupplierProduct[]
+  imaged           Imaged[]
+  Order            Order[]
+  images           Image[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @default(now())
+  itemonPurches    ItemOnPurchase[]
+  itemonInputcar   ItemOnIputCar[]   // ລົດທີ່ສັ່ງ (ຄາດການ)
+  actualInputItems ItemOnIputCar[]   @relation("ActualReceivedCar") // ລົດຈິງທີ່ໄດ້ຮັບ
+  brandCars        BrandCars?        @relation(fields: [brandCarsId], references: [id])
+  brandCarsId      Int?
+}
+
+model Order {
+  id         Int       @id @default(autoincrement())
+  Car        Car       @relation(fields: [carId], references: [id])
+  carId      Int
+  orderdBy   User      @relation(fields: [orderdById], references: [id])
+  orderdById Int
+  customer   Customer? @relation(fields: [customerId], references: [id])
+  customerId Int?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @default(now())
+}
+
+model ColorCar {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  car       Car[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+}
+
+model TypeCar {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  car       Car[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+}
+
+model BrandCars {
+  id             Int              @id @default(autoincrement())
+  name           String           @unique
+  BrandAndModels BrandAndModels[]
+  car            Car[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @default(now())
+}
+
+model BrandAndModels {
+  id          Int       @id @default(autoincrement())
+  car         Car[]
+  modelCar    String
+  BrandCars   BrandCars @relation(fields: [brandCarsId], references: [id])
+  brandCarsId Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now())
+}
+
+model Supplier {
+  id               Int               @id @default(autoincrement())
+  companyName      String            @unique
+  contactName      String?
+  email            String            @unique
+  phone            String            @unique
+  address          String?
+  supplierProducts SupplierProduct[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @default(now())
+  Purchase         Purchase[]
+  InputCar         InputCar[]
+}
+
+model SupplierProduct {
+  id         Int      @id @default(autoincrement())
+  supplierId Int
+  carId      Int
+  isActive   Boolean  @default(true)
+  notes      String?
+  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  Car        Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now())
+
+  @@unique([supplierId, carId])
+  @@map("supplier_products")
+}
+
+model Purchase {
+  id                   Int              @id @default(autoincrement())
+  products             ItemOnPurchase[]
+  status               String           @default("PENDING")
+  quantitytotal        Int              @default(0)
+  expectedDeliveryDate DateTime?
+  supplier             Supplier?        @relation(fields: [supplierId], references: [id])
+  supplierId           Int?
+  orderdBy             User             @relation(fields: [orderdById], references: [id])
+  orderdById           Int
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @default(now())
+  InputCar             InputCar?        @relation(fields: [inputCarId], references: [id])
+  inputCarId           Int?
+}
+
+model ItemOnPurchase {
+  id         Int       @id @default(autoincrement())
+  purchase   Purchase? @relation(fields: [purchaseId], references: [id])
+  purchaseId Int?
+  quantity   Int
+  Car        Car?      @relation(fields: [carId], references: [id])
+  carId      Int?
+}
+
+model InputCar {
+  id                   Int             @id @default(autoincrement())
+  status               String          @default("PENDING")
+  quantitytotal        Int             @default(0)
+  products             ItemOnIputCar[]
+  Purches              Purchase[]
+  expectedDeliveryDate DateTime?
+  supplier             Supplier?       @relation(fields: [supplierId], references: [id])
+  supplierId           Int?
+  orderdBy             User            @relation(fields: [orderdById], references: [id])
+  orderdById           Int
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @default(now())
+}
+
+model ItemOnIputCar {
+  id               Int       @id @default(autoincrement())
+  InputCar         InputCar? @relation(fields: [inputCarId], references: [id], onDelete: Cascade)
+  inputCarId       Int?
+  quantity         Int       // ຈຳນວນທີ່ຄາດວ່າຈະໄດ້ຮັບ
+  Car              Car?      @relation(fields: [carId], references: [id])
+  carId            Int?      // ລົດທີ່ສັ່ງ (ຄາດການ)
+  
+  // ຂໍ້ມູນລົດຈິງທີ່ໄດ້ຮັບ (ເມື່ອ status = RECEIVED)
+  actualCar        Car?      @relation("ActualReceivedCar", fields: [actualCarId], references: [id])
+  actualCarId      Int?      // ລົດຈິງທີ່ໄດ້ຮັບ
+  receivedQuantity Int?      // ຈຳນວນທີ່ໄດ້ຮັບຈິງ
+  
+  // ລາຍລະອຽດລົດທີ່ນຳເຂົ້າຈິງ (ສຳລັບບັນທຶກປະຫວັດ)
+  actualVin        String?   // VIN ຈິງທີ່ໄດ້ຮັບ
+  actualLicensePlate String? // ປ້າຍທະບຽນຈິງທີ່ໄດ້ຮັບ
+  actualYear       Int?      // ປີຈິງທີ່ໄດ້ຮັບ
+  actualPrice      Float?    // ລາຄາຈິງທີ່ໄດ້ຮັບ
+  actualCostPrice  Float?    // ລາຄາຕົ້ນທຶນຈິງ
+  actualEngineNumber String? // ເລກເຄື່ອງຈັກຈິງ
+  actualDescription String?  // ຄຳອະທິບາຍລົດຈິງ
+  actualColorName  String?   // ສີລົດຈິງ
+  actualBrandModel String?   // ແບຣນ-ລຸ້ນຈິງ
+  actualTypeName   String?   // ປະເພດລົດຈິງ
+  
+  // ໝາຍເຫດການນຳເຂົ້າ
+  notes            String?   // ໝາຍເຫດ (ເຊັ່ນ: ແຕກຕ່າງຈາກທີ່ສັ່ງ, ມີບັນຫາ, ຯລຯ)
+  receivedDate     DateTime? // ວັນທີ່ໄດ້ຮັບຈິງ
+  
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @default(now())
+}
