@@ -28,7 +28,7 @@ const MenuAdminDropdown = [
       { name: "ແບນ", icon: <Boxes />, path: "/admin/brands" },
       { name: "ສີ", icon: <Combine />, path: "/admin/colors" },
       { name: "ປະເພດ", icon: <Container />, path: "/admin/types" },
-      { name: "ລຸ້ນຂອງແບນ", icon: <Warehouse />, path: "/admin/models" },
+      { name: "ລຸ້ນຂອງແບນ", icon: <Warehouse />, path: "/admin/brandmodels" },
       { name: "ສະຕອກສິນຄ້າ", icon: <Package />, path: "/admin/warehousestock" },
       { name: "ພະນັກງານ", icon: <SquareUser />, path: "/admin/employee" },
       {

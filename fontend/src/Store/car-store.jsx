@@ -8,6 +8,7 @@ import { listCustomers } from "../api/Customer";
 import { listBrands } from "../api/Brand";
 import { listColors } from "../api/Color";
 import { listTypes } from "../api/Type";
+import { listBrandAndModels } from "../api/BrandAndModel";
 
 const carStore = (set, get) => ({
   user: null,
@@ -17,6 +18,19 @@ const carStore = (set, get) => ({
   brands: [],
   colors: [],
   types: [],
+  brandAndModels: [], // เพิ่ม state สำหรับ brand and models
+
+  // Brand and Model functions
+  getBrandAndModel: async () => {
+    try {
+      const res = await listBrandAndModels();
+      set({
+        brandAndModels: res.data,
+      });
+    } catch (err) {
+      console.log(err);
+    }
+  },
 
   getType: async () => {
     try {

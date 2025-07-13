@@ -1,8 +1,9 @@
 import React from 'react'
+import FormBrandAndModel from '../../../components/admin/From/FormBrandAndModel'
 
 const BrandAndModel = () => {
   return (
-    <div>BrandAndModel</div>
+    <div><FormBrandAndModel /></div>
   )
 }
 
