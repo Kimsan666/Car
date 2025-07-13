@@ -4,8 +4,8 @@ import LoadingToRedirect from "./LoadingToRedirect";
 import useCarStore from "../Store/car-store";
 const ProtectRouUser = ({ element }) => {
   const [ok, setOk] = useState(false);
-  const user = useJimStore((state) => state.user);
-  const token = useJimStore((state) => state.token);
+  const user = useCarStore((state) => state.user);
+  const token = useCarStore((state) => state.token);
 
   useEffect(() => {
     if (user && token) {
