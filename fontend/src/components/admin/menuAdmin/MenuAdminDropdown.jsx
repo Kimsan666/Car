@@ -24,13 +24,13 @@ const MenuAdminDropdown = [
     name: "ຈັດການຂໍ້ມູນສິນຄ້າ",
     icon: <PackageSearch />,
     sub: [
-      { name: "ລົດ", icon: <PackageSearch />, path: "/admin/product" },
+      { name: "ລົດ", icon: <PackageSearch />, path: "/admin/cars" },
       { name: "ແບນ", icon: <Boxes />, path: "/admin/brands" },
       { name: "ສີ", icon: <Combine />, path: "/admin/colors" },
       { name: "ປະເພດ", icon: <Container />, path: "/admin/types" },
       { name: "ລຸ້ນຂອງແບນ", icon: <Warehouse />, path: "/admin/brandmodels" },
-      { name: "ຜູ້ສະໜອງ", icon: <Package />, path: "/admin/warehousestock" },
-      { name: "ພະນັກງານ", icon: <SquareUser />, path: "/admin/employee" },
+      { name: "ຜູ້ສະໜອງ", icon: <Package />, path: "/admin/cars" },
+      { name: "ພະນັກງານ", icon: <SquareUser />, path: "/admin/edit-cars" },
       {
         name: "ຜູ້ໃໍຊ້ລະບົບ",
         icon: <CircleUserRound />,

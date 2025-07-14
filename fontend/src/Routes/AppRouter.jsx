@@ -15,6 +15,11 @@ import EditType from "../components/admin/Edit/EditType";
 import Type from "../page/admin/Management/Type";
 import BrandAndModel from "../page/admin/Management/BrandAndModel";
 import EditBrandAndModel from "../components/admin/Edit/EditBrandAndModel";
+import FormCar from "../components/admin/From/FormCar";
+import EditCar from "../components/admin/Edit/EditCar";
+import CarDetail from "../components/admin/From/CarDetail";
+import CreateCar from "../components/admin/Create/CreateCar";
+import FormCardCar from "../components/admin/From/FormCardCar";
 
 
 const AppRouter = () => {
@@ -26,7 +31,7 @@ const AppRouter = () => {
     {
       path: "/user",
       element: <ProtectRouUser element={<Layoutuser />} />,
-      children: [{ index: true, element: <Home /> }],
+      children: [{ index: true, element: <FormCardCar /> }],
     },
     {
       path: "/admin",
@@ -41,6 +46,10 @@ const AppRouter = () => {
         { path: "edit-types/:id", element: <EditType /> },
         { path: "brandmodels", element: <BrandAndModel /> },
         { path: "edit-brandmodel/:id", element: <EditBrandAndModel /> },
+        { path: "cars", element: <FormCar /> },
+        { path: "edit-car/:id", element: <EditCar /> },
+        { path: "car/:id", element: <CarDetail /> },
+        { path: "car/create", element: <CreateCar /> },
       ],
     },
   ]);

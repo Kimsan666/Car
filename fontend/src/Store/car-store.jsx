@@ -9,6 +9,8 @@ import { listBrands } from "../api/Brand";
 import { listColors } from "../api/Color";
 import { listTypes } from "../api/Type";
 import { listBrandAndModels } from "../api/BrandAndModel";
+import { listCars } from "../api/Car";
+import { listSuppliers, listSuppliersEnabled } from "../api/Supplier";
 
 const carStore = (set, get) => ({
   user: null,
@@ -19,6 +21,44 @@ const carStore = (set, get) => ({
   colors: [],
   types: [],
   brandAndModels: [], // เพิ่ม state สำหรับ brand and models
+  cars: [], // เพิ่ม state สำหรับ cars
+  suppliers: [],
+  suppliersenabled: [],
+
+  // Car functions
+  getSuppliersEnabled: async () => {
+    try {
+      const { token } = get();
+      const res = await listSuppliersEnabled(token);
+      set({
+        suppliersenabled: res.data,
+      });
+    } catch (err) {
+      console.log(err);
+    }
+  },
+  getSupplier: async () => {
+    try {
+      const { token } = get();
+      const res = await listSuppliers(token);
+      set({
+        suppliers: res.data,
+      });
+    } catch (err) {
+      console.log(err);
+    }
+  },
+  getCar: async () => {
+    try {
+      const { token } = get();
+      const res = await listCars(token);
+      set({
+        cars: res.data,
+      });
+    } catch (err) {
+      console.log(err);
+    }
+  },
 
   // Brand and Model functions
   getBrandAndModel: async () => {

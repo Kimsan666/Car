@@ -107,27 +107,34 @@ model Car {
   description      String?
   supplierProducts SupplierProduct[]
   imaged           Imaged[]
-  Order            Order[]
   images           Image[]
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @default(now())
   itemonPurches    ItemOnPurchase[]
-  itemonInputcar   ItemOnIputCar[]   // ລົດທີ່ສັ່ງ (ຄາດການ)
+  itemonInputcar   ItemOnIputCar[] // ລົດທີ່ສັ່ງ (ຄາດການ)
   actualInputItems ItemOnIputCar[]   @relation("ActualReceivedCar") // ລົດຈິງທີ່ໄດ້ຮັບ
   brandCars        BrandCars?        @relation(fields: [brandCarsId], references: [id])
   brandCarsId      Int?
+  ItemOnOrder      ItemOnOrder[]
 }
 
 model Order {
   id         Int       @id @default(autoincrement())
-  Car        Car       @relation(fields: [carId], references: [id])
-  carId      Int
   orderdBy   User      @relation(fields: [orderdById], references: [id])
   orderdById Int
   customer   Customer? @relation(fields: [customerId], references: [id])
   customerId Int?
+  totalAmount Float
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @default(now())
+}
+
+model ItemOnOrder {
+  id        Int      @id @default(autoincrement())
+  Car       Car      @relation(fields: [carId], references: [id])
+  carId     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
 }
 
 model ColorCar {
@@ -235,34 +242,34 @@ model InputCar {
 }
 
 model ItemOnIputCar {
-  id               Int       @id @default(autoincrement())
-  InputCar         InputCar? @relation(fields: [inputCarId], references: [id], onDelete: Cascade)
-  inputCarId       Int?
-  quantity         Int       // ຈຳນວນທີ່ຄາດວ່າຈະໄດ້ຮັບ
-  Car              Car?      @relation(fields: [carId], references: [id])
-  carId            Int?      // ລົດທີ່ສັ່ງ (ຄາດການ)
-  
+  id         Int       @id @default(autoincrement())
+  InputCar   InputCar? @relation(fields: [inputCarId], references: [id], onDelete: Cascade)
+  inputCarId Int?
+  quantity   Int // ຈຳນວນທີ່ຄາດວ່າຈະໄດ້ຮັບ
+  Car        Car?      @relation(fields: [carId], references: [id])
+  carId      Int? // ລົດທີ່ສັ່ງ (ຄາດການ)
+
   // ຂໍ້ມູນລົດຈິງທີ່ໄດ້ຮັບ (ເມື່ອ status = RECEIVED)
-  actualCar        Car?      @relation("ActualReceivedCar", fields: [actualCarId], references: [id])
-  actualCarId      Int?      // ລົດຈິງທີ່ໄດ້ຮັບ
-  receivedQuantity Int?      // ຈຳນວນທີ່ໄດ້ຮັບຈິງ
-  
+  actualCar        Car? @relation("ActualReceivedCar", fields: [actualCarId], references: [id])
+  actualCarId      Int? // ລົດຈິງທີ່ໄດ້ຮັບ
+  receivedQuantity Int? // ຈຳນວນທີ່ໄດ້ຮັບຈິງ
+
   // ລາຍລະອຽດລົດທີ່ນຳເຂົ້າຈິງ (ສຳລັບບັນທຶກປະຫວັດ)
-  actualVin        String?   // VIN ຈິງທີ່ໄດ້ຮັບ
+  actualVin          String? // VIN ຈິງທີ່ໄດ້ຮັບ
   actualLicensePlate String? // ປ້າຍທະບຽນຈິງທີ່ໄດ້ຮັບ
-  actualYear       Int?      // ປີຈິງທີ່ໄດ້ຮັບ
-  actualPrice      Float?    // ລາຄາຈິງທີ່ໄດ້ຮັບ
-  actualCostPrice  Float?    // ລາຄາຕົ້ນທຶນຈິງ
+  actualYear         Int? // ປີຈິງທີ່ໄດ້ຮັບ
+  actualPrice        Float? // ລາຄາຈິງທີ່ໄດ້ຮັບ
+  actualCostPrice    Float? // ລາຄາຕົ້ນທຶນຈິງ
   actualEngineNumber String? // ເລກເຄື່ອງຈັກຈິງ
-  actualDescription String?  // ຄຳອະທິບາຍລົດຈິງ
-  actualColorName  String?   // ສີລົດຈິງ
-  actualBrandModel String?   // ແບຣນ-ລຸ້ນຈິງ
-  actualTypeName   String?   // ປະເພດລົດຈິງ
-  
+  actualDescription  String? // ຄຳອະທິບາຍລົດຈິງ
+  actualColorName    String? // ສີລົດຈິງ
+  actualBrandModel   String? // ແບຣນ-ລຸ້ນຈິງ
+  actualTypeName     String? // ປະເພດລົດຈິງ
+
   // ໝາຍເຫດການນຳເຂົ້າ
-  notes            String?   // ໝາຍເຫດ (ເຊັ່ນ: ແຕກຕ່າງຈາກທີ່ສັ່ງ, ມີບັນຫາ, ຯລຯ)
-  receivedDate     DateTime? // ວັນທີ່ໄດ້ຮັບຈິງ
-  
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @default(now())
+  notes        String? // ໝາຍເຫດ (ເຊັ່ນ: ແຕກຕ່າງຈາກທີ່ສັ່ງ, ມີບັນຫາ, ຯລຯ)
+  receivedDate DateTime? // ວັນທີ່ໄດ້ຮັບຈິງ
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
 }

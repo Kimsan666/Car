@@ -18,7 +18,6 @@ router.get("/cars", authCheck, listCar);
 router.get("/car/:id", authCheck, readCar);
 router.put("/car/:id", authCheck, adminCheck, updateCar);
 router.delete("/car/:id", authCheck, adminCheck, removeCar);
-// router.post("/search/filters", authCheck);
 
 router.post("/images", authCheck, adminCheck, UploadImages);
 router.post("/removeimage", authCheck, adminCheck, RemoveImage);
