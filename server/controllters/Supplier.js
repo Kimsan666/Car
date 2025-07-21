@@ -75,33 +75,6 @@ exports.saveSupplier = async (req, res) => {
         phone: phone.trim(),
         address: address ? address.trim() : null,
       },
-      include: {
-        supplierProducts: {
-          include: {
-            Car: {
-              select: {
-                id: true,
-                name: true,
-                licensePlate: true,
-              },
-            },
-          },
-        },
-        Purchase: {
-          select: {
-            id: true,
-            status: true,
-            createdAt: true,
-          },
-        },
-        InputCar: {
-          select: {
-            id: true,
-            status: true,
-            createdAt: true,
-          },
-        },
-      },
     });
 
     res.status(201).json({
@@ -140,45 +113,7 @@ exports.listSuppliers = async (req, res) => {
   try {
     const suppliers = await prisma.supplier.findMany({
       orderBy: { createdAt: "desc" },
-      include: {
-        supplierProducts: {
-          include: {
-            Car: {
-              select: {
-                id: true,
-                name: true,
-                licensePlate: true,
-                status: true,
-              },
-            },
-          },
-        },
-        Purchase: {
-          select: {
-            id: true,
-            status: true,
-            quantitytotal: true,
-            createdAt: true,
-          },
-        },
-        InputCar: {
-          select: {
-            id: true,
-            status: true,
-            quantitytotal: true,
-            createdAt: true,
-          },
-        },
-        _count: {
-          select: {
-            supplierProducts: true,
-            Purchase: true,
-            InputCar: true,
-          },
-        },
-      },
     });
-
     res.json({
       message: "ດຶງຂໍ້ມູນຜູ້ສະໜອງສຳເລັດແລ້ວ",
       data: suppliers,
@@ -252,76 +187,15 @@ exports.listSuppliersenabled = async (req, res) => {
 exports.readSupplier = async (req, res) => {
   try {
     const { id } = req.params;
-
-    const supplier = await prisma.supplier.findFirst({
+    const Brand = await prisma.supplier.findFirst({
       where: {
         id: Number(id),
       },
-      include: {
-        supplierProducts: {
-          include: {
-            Car: {
-              include: {
-                brandAndModels: {
-                  include: {
-                    BrandCars: true,
-                  },
-                },
-                colorCar: true,
-                typecar: true,
-                images: {
-                  take: 1, // ເອົາແຕ່ຮູບທຳອິດ
-                },
-              },
-            },
-          },
-        },
-        Purchase: {
-          include: {
-            products: {
-              include: {
-                Car: {
-                  select: {
-                    name: true,
-                    licensePlate: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-        InputCar: {
-          include: {
-            products: {
-              include: {
-                Car: {
-                  select: {
-                    name: true,
-                    licensePlate: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
     });
-
-    if (!supplier) {
-      return res.status(404).json({
-        message: "ບໍ່ພົບຂໍ້ມູນຜູ້ສະໜອງ",
-      });
-    }
-
-    res.json({
-      message: "ດຶງຂໍ້ມູນຜູ້ສະໜອງສຳເລັດແລ້ວ",
-      data: supplier,
-    });
+    res.json(Brand);
   } catch (err) {
     console.log(err);
-    res.status(500).json({
-      message: "Server error readSupplier in controller!!!",
-    });
+    res.status(500).json({ message: "server error read colorCar" });
   }
 };
 

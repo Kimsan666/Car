@@ -17,7 +17,6 @@ router.post("/supplier-product", authCheck, adminCheck, saveSupplierProduct);
 // ອ່ານການເຊື່ອມຕໍ່ທັງໝົດ (ສາມາດກັ່ນຕອງດ້ວຍ query parameters)
 // ຕົວຢ່າງ: /api/supplier-products?supplierId=1&isActive=true
 router.get("/supplier-products", listSupplierProducts);
-router.get("/supplier-products", listSupplierProducts);
 
 // ອ່ານການເຊື່ອມຕໍ່ແຕ່ລະລາຍການ
 router.get("/supplier-product/:id", authCheck, adminCheck, readSupplierProduct);
@@ -28,8 +27,6 @@ router.put("/supplier-product/:id", authCheck, adminCheck, updateSupplierProduct
 // ລົບການເຊື່ອມຕໍ່
 router.delete("/supplier-product/:id", authCheck, adminCheck, removeSupplierProduct);
 
-// ຄົ້ນຫາການເຊື່ອມຕໍ່
-router.post("/supplier-products/search", searchSupplierProducts);
 
 // ເປີດ/ປິດການເຊື່ອມຕໍ່
 router.patch("/supplier-product/:id/toggle", authCheck, adminCheck, toggleSupplierProduct);

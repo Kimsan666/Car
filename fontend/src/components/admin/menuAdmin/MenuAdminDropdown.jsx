@@ -29,7 +29,7 @@ const MenuAdminDropdown = [
       { name: "ສີ", icon: <Combine />, path: "/admin/colors" },
       { name: "ປະເພດ", icon: <Container />, path: "/admin/types" },
       { name: "ລຸ້ນຂອງແບນ", icon: <Warehouse />, path: "/admin/brandmodels" },
-      { name: "ຜູ້ສະໜອງ", icon: <Package />, path: "/admin/cars" },
+      { name: "ຜູ້ສະໜອງ", icon: <Package />, path: "/admin/suppliers" },
       { name: "ພະນັກງານ", icon: <SquareUser />, path: "/admin/edit-cars" },
       {
         name: "ຜູ້ໃໍຊ້ລະບົບ",
@@ -48,12 +48,12 @@ const MenuAdminDropdown = [
   {
     name: "ສັ່ງຊື້ສິນຄ້າ",
     icon: <Ambulance />,
-    path: "/admin/purchase-order",
+    path: "/admin/purchases",
   },
   {
     name: "ນຳເຂົ້າສິນຄ້າ",
     icon: <PanelTopOpen />,
-    path: "/admin/input-product",
+    path: "/admin/input-cars",
   },
   {
     name: "ເບີກສິນຄ້າອອກ",

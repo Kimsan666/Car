@@ -4,16 +4,25 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import useCarStore from "../../../Store/car-store";
 import { readCar } from "../../../api/Car";
 import { toast } from "react-toastify";
-import { ArrowLeft, Edit, Calendar, DollarSign, Info, Car as CarIcon, Palette, Wrench } from "lucide-react";
+import {
+  ArrowLeft,
+  Edit,
+  Calendar,
+  DollarSign,
+  Info,
+  Car as CarIcon,
+  Palette,
+  Wrench,
+} from "lucide-react";
 
 const CarDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const token = useCarStore((state) => state.token);
-  
+
   const [car, setCar] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [selectedImageType, setSelectedImageType] = useState('images');
+  const [selectedImageType, setSelectedImageType] = useState("images");
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   useEffect(() => {
@@ -33,22 +42,32 @@ const CarDetail = () => {
   };
 
   const getStatusColor = (status) => {
-    switch(status) {
-      case 'Available': return 'bg-green-100 text-green-800';
-      case 'Sold': return 'bg-red-100 text-red-800';
-      case 'Reserved': return 'bg-yellow-100 text-yellow-800';
-      case 'Maintenance': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+    switch (status) {
+      case "Available":
+        return "bg-green-100 text-green-800";
+      case "Sold":
+        return "bg-red-100 text-red-800";
+      case "Reserved":
+        return "bg-yellow-100 text-yellow-800";
+      case "Maintenance":
+        return "bg-gray-100 text-gray-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getStatusText = (status) => {
-    switch(status) {
-      case 'Available': return 'ວ່າງ';
-      case 'Sold': return 'ຂາຍແລ້ວ';
-      case 'Reserved': return 'ຈອງແລ້ວ';
-      case 'Maintenance': return 'ບຳລຸງຮັກສາ';
-      default: return status;
+    switch (status) {
+      case "Available":
+        return "ວ່າງ";
+      case "Sold":
+        return "ຂາຍແລ້ວ";
+      case "Reserved":
+        return "ຈອງແລ້ວ";
+      case "Maintenance":
+        return "ບຳລຸງຮັກສາ";
+      default:
+        return status;
     }
   };
 
@@ -70,10 +89,18 @@ const CarDetail = () => {
     );
   }
 
-  const currentImages = selectedImageType === 'images' ? car.images : car.imaged;
-
+  const currentImages =
+    selectedImageType === "images" ? car.images : car.imaged;
+  const formatDate = (dateString) => {
+    if (!dateString) return "ບໍ່ລະບຸ";
+    const date = new Date(dateString);
+    const day = date.getDate();
+    const month = date.getMonth() + 1;
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
   return (
-    <div className="container mx-auto p-4">
+    <div className="container font-notosanslao mx-auto p-4">
       <div className="bg-white rounded-lg shadow-md">
         {/* Header */}
         <div className="p-6 border-b">
@@ -105,26 +132,26 @@ const CarDetail = () => {
                 <div className="flex space-x-4 mb-4">
                   <button
                     onClick={() => {
-                      setSelectedImageType('images');
+                      setSelectedImageType("images");
                       setSelectedImageIndex(0);
                     }}
                     className={`px-4 py-2 rounded-md transition-colors ${
-                      selectedImageType === 'images' 
-                        ? 'bg-blue-500 text-white' 
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      selectedImageType === "images"
+                        ? "bg-blue-500 text-white"
+                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                     }`}
                   >
                     ຮູບພາບຫຼັກ ({car.images?.length || 0})
                   </button>
                   <button
                     onClick={() => {
-                      setSelectedImageType('imaged');
+                      setSelectedImageType("imaged");
                       setSelectedImageIndex(0);
                     }}
                     className={`px-4 py-2 rounded-md transition-colors ${
-                      selectedImageType === 'imaged' 
-                        ? 'bg-blue-500 text-white' 
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      selectedImageType === "imaged"
+                        ? "bg-blue-500 text-white"
+                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                     }`}
                   >
                     ຮູບພາບລະອຽດ ({car.imaged?.length || 0})
@@ -159,9 +186,9 @@ const CarDetail = () => {
                         alt={`Thumbnail ${index + 1}`}
                         onClick={() => setSelectedImageIndex(index)}
                         className={`w-full h-16 object-cover rounded cursor-pointer border-2 transition-all ${
-                          selectedImageIndex === index 
-                            ? 'border-blue-500' 
-                            : 'border-gray-200 hover:border-gray-300'
+                          selectedImageIndex === index
+                            ? "border-blue-500"
+                            : "border-gray-200 hover:border-gray-300"
                         }`}
                       />
                     ))}
@@ -180,94 +207,27 @@ const CarDetail = () => {
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-600">ປ້າຍທະບຽນ</label>
-                    <p className="text-lg font-semibold text-gray-900">{car.licensePlate}</p>
-                  </div>
-                  {car.name && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600">ຊື່ລົດ</label>
-                      <p className="text-lg text-gray-900">{car.name}</p>
-                    </div>
-                  )}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600">ແບຣນ</label>
-                    <p className="text-lg text-gray-900">{car.brandCars?.name || '-'}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600">ລຸ້ນ</label>
-                    <p className="text-lg text-gray-900">{car.brandAndModels?.modelCar || '-'}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600">ສະຖານະ</label>
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(car.status)}`}>
-                      {getStatusText(car.status)}
-                    </span>
-                  </div>
-                  {car.year && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600">ປີ</label>
-                      <p className="text-lg text-gray-900">{car.year}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Technical Details */}
-              <div className="bg-gray-50 rounded-lg p-6">
-                <h2 className="text-xl font-semibold mb-4 flex items-center">
-                  <Wrench className="h-5 w-5 mr-2" />
-                  ລາຍລະອຽດເຕັກນິກ
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600">ສີ</label>
-                    <p className="text-lg text-gray-900 flex items-center">
-                      <Palette className="h-4 w-4 mr-2" />
-                      {car.colorCar?.name || '-'}
+                    <label className="block text-sm font-medium text-gray-600">
+                      ແບຣນ
+                    </label>
+                    <p className="text-lg text-gray-900">
+                      {car.brandCars?.name || "-"}
                     </p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-600">ປະເພດ</label>
-                    <p className="text-lg text-gray-900">{car.typecar?.name || '-'}</p>
-                  </div>
-                  {car.vin && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600">VIN</label>
-                      <p className="text-lg text-gray-900 font-mono">{car.vin}</p>
-                    </div>
-                  )}
-                  {car.engineNumber && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600">ເລກເຄື່ອງຈັກ</label>
-                      <p className="text-lg text-gray-900 font-mono">{car.engineNumber}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Pricing */}
-              <div className="bg-gray-50 rounded-lg p-6">
-                <h2 className="text-xl font-semibold mb-4 flex items-center">
-                  <DollarSign className="h-5 w-5 mr-2" />
-                  ລາຄາ
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600">ລາຄາຂາຍ</label>
-                    <p className="text-2xl font-bold text-green-600">
-                      {new Intl.NumberFormat('lo-LA').format(car.price)} ₭
+                    <label className="block text-sm font-medium text-gray-600">
+                      ລຸ້ນ
+                    </label>
+                    <p className="text-lg text-gray-900">
+                      {car.brandAndModels?.modelCar || "-"}
                     </p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-600">ລາຄາຕົ້ນທຶນ</label>
-                    <p className="text-xl font-semibold text-orange-600">
-                      {new Intl.NumberFormat('lo-LA').format(car.costPrice)} ₭
-                    </p>
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-600">ກຳໄລ</label>
-                    <p className="text-xl font-semibold text-blue-600">
-                      {new Intl.NumberFormat('lo-LA').format(car.price - car.costPrice)} ₭
+                    <label className="block text-sm font-medium text-gray-600">
+                      ປະເພດ
+                    </label>
+                    <p className="text-lg text-gray-900">
+                      {car.typecar?.name || "-"}
                     </p>
                   </div>
                 </div>
@@ -277,7 +237,9 @@ const CarDetail = () => {
               {car.description && (
                 <div className="bg-gray-50 rounded-lg p-6">
                   <h2 className="text-xl font-semibold mb-4">ຄຳອະທິບາຍ</h2>
-                  <p className="text-gray-700 leading-relaxed">{car.description}</p>
+                  <p className="text-gray-700 leading-relaxed">
+                    {car.description}
+                  </p>
                 </div>
               )}
 
@@ -289,27 +251,19 @@ const CarDetail = () => {
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-600">ວັນທີ່ສ້າງ</label>
+                    <label className="block text-sm font-medium text-gray-600">
+                      ວັນທີ່ສ້າງ
+                    </label>
                     <p className="text-lg text-gray-900">
-                      {new Date(car.createdAt).toLocaleDateString('lo-LA', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
+                      {formatDate(car.createdAt)}
                     </p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-600">ວັນທີ່ອັບເດດ</label>
+                    <label className="block text-sm font-medium text-gray-600">
+                      ວັນທີ່ອັບເດດ
+                    </label>
                     <p className="text-lg text-gray-900">
-                      {new Date(car.updatedAt).toLocaleDateString('lo-LA', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
+                      {formatDate(car.updatedAt)}
                     </p>
                   </div>
                 </div>

@@ -56,20 +56,20 @@ export const removeCustomer = async (token, id) => {
   });
 };
 
-// ອັບໂຫລດຮູບພາບ
-export const uploadCustomerImage = async (token, imageData) => {
-  return await axios.post(`${API_URL}/imaged`, imageData, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-};
+export const removeCarImageC = async (token, public_id) =>
+  await axios.post(
+    `${API_URL}/removeimage`,
+    { public_id },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
 
-// ລົບຮູບພາບ
-export const removeCustomerImage = async (token, imageData) => {
-  return await axios.post(`${API_URL}/removeimage`, imageData, {
+export const uploadCarImagedC = async (token, imageData) =>
+  await axios.post(`${API_URL}/imaged`, imageData, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
   });
-};

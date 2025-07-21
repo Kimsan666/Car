@@ -98,7 +98,7 @@ const FormBrandAndModel = () => {
   };
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto p-4 font-notosanslao">
       <div className="bg-white rounded-lg shadow-md">
         <div className="p-6 border-b">
           <h1 className="text-2xl font-bold text-gray-800">ຈັດການລຸ້ນລົດ</h1>
@@ -148,7 +148,7 @@ const FormBrandAndModel = () => {
 
                 {/* Model Name */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium font-notosanslao text-gray-700 mb-2">
                     ຊື່ລຸ້ນ *
                   </label>
                   <input
@@ -159,12 +159,15 @@ const FormBrandAndModel = () => {
                     placeholder="ປ້ອນຊື່ລຸ້ນ"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
+                  <div className="text-xs font-notosanslao text-gray-500 text-right mt-1">
+                  {form.modelCar?.length || 0}/191 ຕົວອັກສອນ
+                </div>
                 </div>
               </div>
 
               <button
                 type="submit"
-                className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-md transition-colors"
+                className="bg-blue-500 hover:bg-blue-600 font-notosanslao text-white px-6 py-2 rounded-md transition-colors"
               >
                 ບັນທຶກ
               </button>
@@ -172,15 +175,15 @@ const FormBrandAndModel = () => {
           </div>
 
           {/* Search Section */}
-          <div className="mb-6">
-            <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <div className="mb-6 font-notosanslao">
+            <div className="relative max-w-md font-notosanslao">
+              <Search className="absolute font-notosanslao left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="ຄົ້ນຫາລຸ້ນຫຼືແບຣນ..."
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="pl-10 pr-4 py-2 border font-notosanslao border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>

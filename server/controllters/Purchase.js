@@ -1,3 +1,5 @@
+const prisma = require("../config/prisma");
+
 // ຟັງຊັນສ້າງ Purchase ໃໝ່
 exports.savePurchase = async (req, res) => {
   try {
@@ -5,19 +7,19 @@ exports.savePurchase = async (req, res) => {
       supplierId,
       expectedDeliveryDate,
       products, // array ຂອງ { carId, quantity }
-      orderdById
+      orderdById,
     } = req.body;
 
     // ກວດສອບຂໍ້ມູນທີ່ຈຳເປັນ
     if (!orderdById) {
       return res.status(400).json({
-        message: "ກະລຸນາລະບຸຜູ້ສັ່ງຊື້"
+        message: "ກະລຸນາລະບຸຜູ້ສັ່ງຊື້",
       });
     }
 
     if (!products || !Array.isArray(products) || products.length === 0) {
       return res.status(400).json({
-        message: "ກະລຸນາເລືອກສິນຄ້າທີ່ຕ້ອງການສັ່ງຊື້"
+        message: "ກະລຸນາເລືອກສິນຄ້າທີ່ຕ້ອງການສັ່ງຊື້",
       });
     }
 
@@ -30,7 +32,7 @@ exports.savePurchase = async (req, res) => {
 
     if (!user) {
       return res.status(400).json({
-        message: "ບໍ່ພົບຂໍ້ມູນຜູ້ໃຊ້ທີ່ລະບຸ"
+        message: "ບໍ່ພົບຂໍ້ມູນຜູ້ໃຊ້ທີ່ລະບຸ",
       });
     }
 
@@ -44,22 +46,22 @@ exports.savePurchase = async (req, res) => {
 
       if (!supplier) {
         return res.status(400).json({
-          message: "ບໍ່ພົບຂໍ້ມູນຜູ້ສະໜອງທີ່ລະບຸ"
+          message: "ບໍ່ພົບຂໍ້ມູນຜູ້ສະໜອງທີ່ລະບຸ",
         });
       }
     }
 
     // ກວດສອບສິນຄ້າທັງໝົດ
-    const carIds = products.map(p => parseInt(p.carId));
+    const carIds = products.map((p) => parseInt(p.carId));
     const cars = await prisma.car.findMany({
       where: {
-        id: { in: carIds }
-      }
+        id: { in: carIds },
+      },
     });
 
     if (cars.length !== carIds.length) {
       return res.status(400).json({
-        message: "ມີບາງລົດທີ່ບໍ່ພົບໃນລະບົບ"
+        message: "ມີບາງລົດທີ່ບໍ່ພົບໃນລະບົບ",
       });
     }
 
@@ -67,19 +69,24 @@ exports.savePurchase = async (req, res) => {
     for (let product of products) {
       if (!product.quantity || product.quantity <= 0) {
         return res.status(400).json({
-          message: "ຈຳນວນສິນຄ້າຕ້ອງມີຄ່າມากກວ່າ 0"
+          message: "ຈຳນວນສິນຄ້າຕ້ອງມີຄ່າມากກວ່າ 0",
         });
       }
     }
 
     // ຄິດໄລ່ຈຳນວນທັງໝົດ
-    const quantitytotal = products.reduce((sum, product) => sum + parseInt(product.quantity), 0);
+    const quantitytotal = products.reduce(
+      (sum, product) => sum + parseInt(product.quantity),
+      0
+    );
 
     // ສ້າງ Purchase ພ້ອມ ItemOnPurchase
     const purchase = await prisma.purchase.create({
       data: {
         supplierId: supplierId ? parseInt(supplierId) : null,
-        expectedDeliveryDate: expectedDeliveryDate ? new Date(expectedDeliveryDate) : null,
+        expectedDeliveryDate: expectedDeliveryDate
+          ? new Date(expectedDeliveryDate)
+          : null,
         quantitytotal: quantitytotal,
         orderdById: parseInt(orderdById),
         status: "PENDING",
@@ -98,7 +105,7 @@ exports.savePurchase = async (req, res) => {
             contactName: true,
             email: true,
             phone: true,
-          }
+          },
         },
         orderdBy: {
           select: {
@@ -108,9 +115,9 @@ exports.savePurchase = async (req, res) => {
               select: {
                 firstName: true,
                 lastName: true,
-              }
-            }
-          }
+              },
+            },
+          },
         },
         products: {
           include: {
@@ -118,17 +125,17 @@ exports.savePurchase = async (req, res) => {
               include: {
                 brandAndModels: {
                   include: {
-                    BrandCars: true
-                  }
+                    BrandCars: true,
+                  },
                 },
                 colorCar: true,
                 typecar: true,
                 images: {
                   take: 1,
-                }
-              }
-            }
-          }
+                },
+              },
+            },
+          },
         },
       },
     });
@@ -137,7 +144,6 @@ exports.savePurchase = async (req, res) => {
       message: "ສ້າງໃບສັ່ງຊື້ສຳເລັດແລ້ວ",
       data: purchase,
     });
-
   } catch (err) {
     console.log(err);
     res.status(500).json({
@@ -150,18 +156,18 @@ exports.savePurchase = async (req, res) => {
 exports.listPurchases = async (req, res) => {
   try {
     const { status, supplierId, orderdById } = req.query;
-    
+
     // ສ້າງເງື່ອນໄຂການຄົ້ນຫາ
     let whereCondition = {};
-    
+
     if (status) {
       whereCondition.status = status;
     }
-    
+
     if (supplierId) {
       whereCondition.supplierId = parseInt(supplierId);
     }
-    
+
     if (orderdById) {
       whereCondition.orderdById = parseInt(orderdById);
     }
@@ -177,7 +183,7 @@ exports.listPurchases = async (req, res) => {
             contactName: true,
             email: true,
             phone: true,
-          }
+          },
         },
         orderdBy: {
           select: {
@@ -187,39 +193,50 @@ exports.listPurchases = async (req, res) => {
               select: {
                 firstName: true,
                 lastName: true,
-              }
-            }
-          }
+              },
+            },
+          },
         },
         products: {
           include: {
             Car: {
               select: {
                 id: true,
-                name: true,
-                licensePlate: true,
-                price: true,
-                costPrice: true,
-              }
-            }
-          }
+                brandCars: {
+                  select: {
+                    name: true,
+                  },
+                },
+                typecar: {
+                  select: {
+                    name: true,
+                  },
+                },
+                brandAndModels: {
+                  select: {
+                    modelCar: true,
+                  },
+                },
+              },
+            },
+          },
         },
         _count: {
           select: {
             products: true,
-          }
-        }
+          },
+        },
       },
     });
-    
+
     res.json({
       message: "ດຶງຂໍ້ມູນໃບສັ່ງຊື້ສຳເລັດແລ້ວ",
-      data: purchases
+      data: purchases,
     });
   } catch (err) {
     console.log(err);
-    res.status(500).json({ 
-      message: "Server error listPurchases in controller!!!" 
+    res.status(500).json({
+      message: "Server error listPurchases in controller!!!",
     });
   }
 };
@@ -228,7 +245,7 @@ exports.listPurchases = async (req, res) => {
 exports.readPurchase = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const purchase = await prisma.purchase.findFirst({
       where: {
         id: Number(id),
@@ -242,7 +259,7 @@ exports.readPurchase = async (req, res) => {
             email: true,
             phone: true,
             address: true,
-          }
+          },
         },
         orderdBy: {
           select: {
@@ -253,9 +270,9 @@ exports.readPurchase = async (req, res) => {
                 firstName: true,
                 lastName: true,
                 position: true,
-              }
-            }
-          }
+              },
+            },
+          },
         },
         products: {
           include: {
@@ -263,40 +280,40 @@ exports.readPurchase = async (req, res) => {
               include: {
                 brandAndModels: {
                   include: {
-                    BrandCars: true
-                  }
+                    BrandCars: true,
+                  },
                 },
                 colorCar: true,
                 typecar: true,
                 images: true,
-              }
-            }
-          }
+              },
+            },
+          },
         },
         InputCar: {
           select: {
             id: true,
             status: true,
             createdAt: true,
-          }
-        }
+          },
+        },
       },
     });
-    
+
     if (!purchase) {
       return res.status(404).json({
-        message: "ບໍ່ພົບຂໍ້ມູນໃບສັ່ງຊື້"
+        message: "ບໍ່ພົບຂໍ້ມູນໃບສັ່ງຊື້",
       });
     }
-    
+
     res.json({
       message: "ດຶງຂໍ້ມູນໃບສັ່ງຊື້ສຳເລັດແລ້ວ",
-      data: purchase
+      data: purchase,
     });
   } catch (err) {
     console.log(err);
-    res.status(500).json({ 
-      message: "Server error readPurchase in controller!!!" 
+    res.status(500).json({
+      message: "Server error readPurchase in controller!!!",
     });
   }
 };
@@ -305,49 +322,44 @@ exports.readPurchase = async (req, res) => {
 exports.updatePurchase = async (req, res) => {
   try {
     const { id } = req.params;
-    const {
-      status,
-      expectedDeliveryDate,
-      supplierId,
-      products
-    } = req.body;
+    const { status, expectedDeliveryDate, supplierId, products } = req.body;
 
     // ກວດສອບວ່າໃບສັ່ງຊື້ມີຢູ່ຫຼືບໍ່
     const existingPurchase = await prisma.purchase.findUnique({
       where: { id: Number(id) },
-      include: { products: true }
+      include: { products: true },
     });
 
     if (!existingPurchase) {
       return res.status(404).json({
-        message: "ບໍ່ພົບຂໍ້ມູນໃບສັ່ງຊື້"
+        message: "ບໍ່ພົບຂໍ້ມູນໃບສັ່ງຊື້",
       });
     }
 
     // ກວດສອບສະຖານະທີ່ອະນຸຍາດ
-    const allowedStatuses = ['PENDING', 'CONFIRMED', 'DELIVERED', 'CANCELLED'];
+    const allowedStatuses = ["PENDING", "CONFIRMED", "DELIVERED", "CANCELLED"];
     if (status && !allowedStatuses.includes(status)) {
       return res.status(400).json({
-        message: "ສະຖານະບໍ່ຖືກຕ້ອງ"
+        message: "ສະຖານະບໍ່ຖືກຕ້ອງ",
       });
     }
 
     // ຖ້າສະຖານະເປັນ DELIVERED ຫຼື CANCELLED ແລ້ວ ບໍ່ສາມາດແກ້ໄຂໄດ້
-    if (['DELIVERED', 'CANCELLED'].includes(existingPurchase.status)) {
+    if (["DELIVERED", "CANCELLED"].includes(existingPurchase.status)) {
       return res.status(400).json({
-        message: "ບໍ່ສາມາດແກ້ໄຂໃບສັ່ງຊື້ທີ່ສົ່ງແລ້ວຫຼືຍົກເລີກແລ້ວ"
+        message: "ບໍ່ສາມາດແກ້ໄຂໃບສັ່ງຊື້ທີ່ສົ່ງແລ້ວຫຼືຍົກເລີກແລ້ວ",
       });
     }
 
     // ກວດສອບ Supplier (ຖ້າມີການແກ້ໄຂ)
     if (supplierId) {
       const supplier = await prisma.supplier.findUnique({
-        where: { id: parseInt(supplierId) }
+        where: { id: parseInt(supplierId) },
       });
-      
+
       if (!supplier) {
         return res.status(400).json({
-          message: "ບໍ່ພົບຂໍ້ມູນຜູ້ສະໜອງທີ່ລະບຸ"
+          message: "ບໍ່ພົບຂໍ້ມູນຜູ້ສະໜອງທີ່ລະບຸ",
         });
       }
     }
@@ -359,7 +371,9 @@ exports.updatePurchase = async (req, res) => {
 
     if (status) updateData.status = status;
     if (expectedDeliveryDate !== undefined) {
-      updateData.expectedDeliveryDate = expectedDeliveryDate ? new Date(expectedDeliveryDate) : null;
+      updateData.expectedDeliveryDate = expectedDeliveryDate
+        ? new Date(expectedDeliveryDate)
+        : null;
     }
     if (supplierId !== undefined) {
       updateData.supplierId = supplierId ? parseInt(supplierId) : null;
@@ -368,24 +382,27 @@ exports.updatePurchase = async (req, res) => {
     // ຖ້າມີການແກ້ໄຂສິນຄ້າ
     if (products && Array.isArray(products)) {
       // ກວດສອບສິນຄ້າທັງໝົດ
-      const carIds = products.map(p => parseInt(p.carId));
+      const carIds = products.map((p) => parseInt(p.carId));
       const cars = await prisma.car.findMany({
-        where: { id: { in: carIds } }
+        where: { id: { in: carIds } },
       });
 
       if (cars.length !== carIds.length) {
         return res.status(400).json({
-          message: "ມີບາງລົດທີ່ບໍ່ພົບໃນລະບົບ"
+          message: "ມີບາງລົດທີ່ບໍ່ພົບໃນລະບົບ",
         });
       }
 
       // ຄິດໄລ່ຈຳນວນໃໝ່
-      const quantitytotal = products.reduce((sum, product) => sum + parseInt(product.quantity), 0);
+      const quantitytotal = products.reduce(
+        (sum, product) => sum + parseInt(product.quantity),
+        0
+      );
       updateData.quantitytotal = quantitytotal;
 
       // ລົບ ItemOnPurchase ເກົ່າ ແລະສ້າງໃໝ່
       await prisma.itemOnPurchase.deleteMany({
-        where: { purchaseId: Number(id) }
+        where: { purchaseId: Number(id) },
       });
 
       updateData.products = {
@@ -408,7 +425,7 @@ exports.updatePurchase = async (req, res) => {
             contactName: true,
             email: true,
             phone: true,
-          }
+          },
         },
         orderdBy: {
           select: {
@@ -418,9 +435,9 @@ exports.updatePurchase = async (req, res) => {
               select: {
                 firstName: true,
                 lastName: true,
-              }
-            }
-          }
+              },
+            },
+          },
         },
         products: {
           include: {
@@ -431,9 +448,9 @@ exports.updatePurchase = async (req, res) => {
                 licensePlate: true,
                 price: true,
                 costPrice: true,
-              }
-            }
-          }
+              },
+            },
+          },
         },
       },
     });
@@ -442,7 +459,6 @@ exports.updatePurchase = async (req, res) => {
       message: "ອັບເດດໃບສັ່ງຊື້ສຳເລັດແລ້ວ",
       data: updatedPurchase,
     });
-
   } catch (err) {
     console.log(err);
     res.status(500).json({
@@ -459,35 +475,35 @@ exports.removePurchase = async (req, res) => {
     // ກວດສອບວ່າໃບສັ່ງຊື້ມີຢູ່ຫຼືບໍ່
     const existingPurchase = await prisma.purchase.findUnique({
       where: { id: Number(id) },
-      include: { 
+      include: {
         products: true,
         InputCar: true,
-      }
+      },
     });
 
     if (!existingPurchase) {
       return res.status(404).json({
-        message: "ບໍ່ພົບຂໍ້ມູນໃບສັ່ງຊື້"
+        message: "ບໍ່ພົບຂໍ້ມູນໃບສັ່ງຊື້",
       });
     }
 
     // ກວດສອບສະຖານະ - ບໍ່ສາມາດລົບໃບສັ່ງຊື້ທີ່ CONFIRMED ຫຼື DELIVERED
-    if (['CONFIRMED', 'DELIVERED'].includes(existingPurchase.status)) {
+    if (["CONFIRMED", "DELIVERED"].includes(existingPurchase.status)) {
       return res.status(400).json({
-        message: "ບໍ່ສາມາດລົບໃບສັ່ງຊື້ທີ່ຢືນຢັນຫຼືສົ່ງແລ້ວ"
+        message: "ບໍ່ສາມາດລົບໃບສັ່ງຊື້ທີ່ຢືນຢັນຫຼືສົ່ງແລ້ວ",
       });
     }
 
     // ກວດສອບວ່າມີ InputCar ເຊື່ອມຕໍ່ຫຼືບໍ່
     if (existingPurchase.InputCar && existingPurchase.InputCar.length > 0) {
       return res.status(400).json({
-        message: "ບໍ່ສາມາດລົບໃບສັ່ງຊື້ທີ່ມີການນຳເຂົ້າແລ້ວ"
+        message: "ບໍ່ສາມາດລົບໃບສັ່ງຊື້ທີ່ມີການນຳເຂົ້າແລ້ວ",
       });
     }
 
     // ລົບໃບສັ່ງຊື້ (ItemOnPurchase ຈະຖືກລົບອັດຕະໂນມັດດ້ວຍ Cascade)
     const deletedPurchase = await prisma.purchase.delete({
-      where: { id: Number(id) }
+      where: { id: Number(id) },
     });
 
     res.json({
@@ -496,9 +512,8 @@ exports.removePurchase = async (req, res) => {
         id: deletedPurchase.id,
         status: deletedPurchase.status,
         quantitytotal: deletedPurchase.quantitytotal,
-      }
+      },
     });
-
   } catch (err) {
     console.log(err);
     res.status(500).json({
@@ -511,9 +526,9 @@ exports.removePurchase = async (req, res) => {
 exports.searchPurchases = async (req, res) => {
   try {
     const { query, status, supplierId, dateFrom, dateTo } = req.body;
-    
+
     let whereCondition = {};
-    
+
     // ຖ້າມີການຄົ້ນຫາດ້ວຍຂໍ້ຄວາມ
     if (query && query.trim() !== "") {
       whereCondition.OR = [
@@ -553,17 +568,17 @@ exports.searchPurchases = async (req, res) => {
         },
       ];
     }
-    
+
     // ກັ່ນຕອງຕາມສະຖານະ
     if (status) {
       whereCondition.status = status;
     }
-    
+
     // ກັ່ນຕອງຕາມຜູ້ສະໜອງ
     if (supplierId) {
       whereCondition.supplierId = parseInt(supplierId);
     }
-    
+
     // ກັ່ນຕອງຕາມວັນທີ
     if (dateFrom || dateTo) {
       whereCondition.createdAt = {};
@@ -584,7 +599,7 @@ exports.searchPurchases = async (req, res) => {
             id: true,
             companyName: true,
             contactName: true,
-          }
+          },
         },
         orderdBy: {
           select: {
@@ -594,9 +609,9 @@ exports.searchPurchases = async (req, res) => {
               select: {
                 firstName: true,
                 lastName: true,
-              }
-            }
-          }
+              },
+            },
+          },
         },
         products: {
           include: {
@@ -606,23 +621,22 @@ exports.searchPurchases = async (req, res) => {
                 name: true,
                 licensePlate: true,
                 price: true,
-              }
-            }
-          }
+              },
+            },
+          },
         },
         _count: {
           select: {
             products: true,
-          }
-        }
+          },
+        },
       },
     });
 
     res.json({
       message: "ຄົ້ນຫາໃບສັ່ງຊື້ສຳເລັດແລ້ວ",
-      data: purchases
+      data: purchases,
     });
-
   } catch (err) {
     console.log(err);
     res.status(500).json({
@@ -638,50 +652,50 @@ exports.updatePurchaseStatus = async (req, res) => {
     const { status } = req.body;
 
     // ກວດສອບສະຖານະທີ່ອະນຸຍາດ
-    const allowedStatuses = ['PENDING', 'CONFIRMED', 'DELIVERED', 'CANCELLED'];
+    const allowedStatuses = ["PENDING", "CONFIRMED", "DELIVERED", "CANCELLED"];
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({
-        message: "ສະຖານະບໍ່ຖືກຕ້ອງ"
+        message: "ສະຖານະບໍ່ຖືກຕ້ອງ",
       });
     }
 
     // ກວດສອບວ່າໃບສັ່ງຊື້ມີຢູ່ຫຼືບໍ່
     const existingPurchase = await prisma.purchase.findUnique({
-      where: { id: Number(id) }
+      where: { id: Number(id) },
     });
 
     if (!existingPurchase) {
       return res.status(404).json({
-        message: "ບໍ່ພົບຂໍ້ມູນໃບສັ່ງຊື້"
+        message: "ບໍ່ພົບຂໍ້ມູນໃບສັ່ງຊື້",
       });
     }
 
     // ກວດສອບການປ່ຽນສະຖານະທີ່ອະນຸຍາດ
     const statusFlow = {
-      'PENDING': ['CONFIRMED', 'CANCELLED'],
-      'CONFIRMED': ['DELIVERED', 'CANCELLED'],
-      'DELIVERED': [], // ບໍ່ສາມາດປ່ຽນຫາສະຖານະອື່ນໄດ້
-      'CANCELLED': [] // ບໍ່ສາມາດປ່ຽນຫາສະຖານະອື່ນໄດ້
+      PENDING: ["CONFIRMED", "CANCELLED"],
+      CONFIRMED: ["DELIVERED", "CANCELLED"],
+      DELIVERED: [], // ບໍ່ສາມາດປ່ຽນຫາສະຖານະອື່ນໄດ້
+      CANCELLED: [], // ບໍ່ສາມາດປ່ຽນຫາສະຖານະອື່ນໄດ້
     };
 
     if (!statusFlow[existingPurchase.status].includes(status)) {
       return res.status(400).json({
-        message: `ບໍ່ສາມາດປ່ຽນສະຖານະຈາກ ${existingPurchase.status} ເປັນ ${status} ໄດ້`
+        message: `ບໍ່ສາມາດປ່ຽນສະຖານະຈາກ ${existingPurchase.status} ເປັນ ${status} ໄດ້`,
       });
     }
 
     // ອັບເດດສະຖານະ
     const updatedPurchase = await prisma.purchase.update({
       where: { id: Number(id) },
-      data: { 
+      data: {
         status: status,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       },
       include: {
         supplier: {
           select: {
             companyName: true,
-          }
+          },
         },
         products: {
           include: {
@@ -689,9 +703,9 @@ exports.updatePurchaseStatus = async (req, res) => {
               select: {
                 name: true,
                 licensePlate: true,
-              }
-            }
-          }
+              },
+            },
+          },
         },
       },
     });
@@ -700,7 +714,6 @@ exports.updatePurchaseStatus = async (req, res) => {
       message: `ປ່ຽນສະຖານະໃບສັ່ງຊື້ເປັນ ${status} ສຳເລັດແລ້ວ`,
       data: updatedPurchase,
     });
-
   } catch (err) {
     console.log(err);
     res.status(500).json({

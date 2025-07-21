@@ -44,6 +44,7 @@ model User {
   Order      Order[]
   Purchase   Purchase[]
   InputCar   InputCar[]
+  Cart       Cart[]
 }
 
 model Customer {
@@ -60,6 +61,7 @@ model Customer {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @default(now())
   Order           Order[]
+  Cart            Cart[]
 }
 
 model Image {
@@ -92,57 +94,104 @@ model Car {
   id               Int               @id @default(autoincrement())
   brandAndModels   BrandAndModels?   @relation(fields: [brandAndModelsId], references: [id])
   brandAndModelsId Int?
-  name             String?
-  licensePlate     String            @unique
-  year             Int?
-  colorCar         ColorCar?         @relation(fields: [colorCarId], references: [id])
-  colorCarId       Int?
-  vin              String?           @unique
-  engineNumber     String?
   typecar          TypeCar?          @relation(fields: [typeId], references: [id])
   typeId           Int?
-  status           String            @default("Available")
-  price            Float
-  costPrice        Float
   description      String?
   supplierProducts SupplierProduct[]
   imaged           Imaged[]
   images           Image[]
   createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @default(now())
+  updatedAt        DateTime          @default(now()) @updatedAt
   itemonPurches    ItemOnPurchase[]
-  itemonInputcar   ItemOnIputCar[] // ລົດທີ່ສັ່ງ (ຄາດການ)
-  actualInputItems ItemOnIputCar[]   @relation("ActualReceivedCar") // ລົດຈິງທີ່ໄດ້ຮັບ
   brandCars        BrandCars?        @relation(fields: [brandCarsId], references: [id])
   brandCarsId      Int?
   ItemOnOrder      ItemOnOrder[]
+  ItemOnIputCar    ItemOnIputCar[]
+  saleCar          saleCar[]
+}
+
+model saleCar {
+  id           Int           @id @default(autoincrement())
+  name         String?
+  licensePlate String?       @unique
+  year         Int?
+  colorCar     ColorCar?     @relation(fields: [colorCarId], references: [id])
+  colorCarId   Int?
+  vin          String?       @unique
+  engineNumber String?
+  status       String        @default("Available") // Available, Sold, Reserved, Maintenance
+  price        Float
+  costPrice    Float
+  soldDate     DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @default(now()) @updatedAt
+  ItemOnOrder  ItemOnOrder[]
+  ItemOnCart   ItemOnCart[]
+  car          Car?          @relation(fields: [carId], references: [id])
+  carId        Int
+}
+
+model Cart {
+  id          Int           @id @default(autoincrement())
+  orderdBy    User          @relation(fields: [orderdById], references: [id])
+  orderdById  Int
+  customer    Customer?     @relation(fields: [customerId], references: [id])
+  customerId  Int?
+  totalAmount Float
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @default(now()) @updatedAt
+  ItemOnOrder ItemOnOrder[]
+}
+
+// แก้ไข ItemOnOrder model เพื่อเพิ่ม orderId และ quantity
+model ItemOnCart {
+  id        Int      @id @default(autoincrement())
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade) // เพิ่มความสัมพันธ์กับ Order
+  orderId   Int
+  quantity  Int      @default(1)
+  price     Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  saleCar   saleCar? @relation(fields: [saleCarId], references: [id])
+  saleCarId Int?
 }
 
 model Order {
-  id         Int       @id @default(autoincrement())
-  orderdBy   User      @relation(fields: [orderdById], references: [id])
-  orderdById Int
-  customer   Customer? @relation(fields: [customerId], references: [id])
-  customerId Int?
+  id          Int           @id @default(autoincrement())
+  orderdBy    User          @relation(fields: [orderdById], references: [id])
+  orderdById  Int
+  customer    Customer?     @relation(fields: [customerId], references: [id])
+  customerId  Int?
   totalAmount Float
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @default(now())
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @default(now()) @updatedAt
+  ItemOnOrder ItemOnOrder[]
+  ItemOnCart  ItemOnCart[]
 }
 
+// แก้ไข ItemOnOrder model เพื่อเพิ่ม orderId และ quantity
 model ItemOnOrder {
   id        Int      @id @default(autoincrement())
-  Car       Car      @relation(fields: [carId], references: [id])
-  carId     Int
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade) // เพิ่มความสัมพันธ์กับ Order
+  orderId   Int
+  quantity  Int      @default(1)
+  price     Float?
   createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  saleCar   saleCar? @relation(fields: [saleCarId], references: [id])
+  saleCarId Int?
+  Car       Car?     @relation(fields: [carId], references: [id])
+  carId     Int?
+  Cart      Cart?    @relation(fields: [cartId], references: [id])
+  cartId    Int?
 }
 
 model ColorCar {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
-  car       Car[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now())
+  saleCar   saleCar[]
 }
 
 model TypeCar {
@@ -193,7 +242,7 @@ model SupplierProduct {
   isActive   Boolean  @default(true)
   notes      String?
   supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-  Car        Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
+  car        Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @default(now())
 
@@ -213,7 +262,7 @@ model Purchase {
   orderdById           Int
   createdAt            DateTime         @default(now())
   updatedAt            DateTime         @default(now())
-  InputCar             InputCar?        @relation(fields: [inputCarId], references: [id])
+  inputCar             InputCar?        @relation(fields: [inputCarId], references: [id])
   inputCarId           Int?
 }
 
@@ -242,16 +291,12 @@ model InputCar {
 }
 
 model ItemOnIputCar {
-  id         Int       @id @default(autoincrement())
-  InputCar   InputCar? @relation(fields: [inputCarId], references: [id], onDelete: Cascade)
-  inputCarId Int?
-  quantity   Int // ຈຳນວນທີ່ຄາດວ່າຈະໄດ້ຮັບ
-  Car        Car?      @relation(fields: [carId], references: [id])
-  carId      Int? // ລົດທີ່ສັ່ງ (ຄາດການ)
-
-  // ຂໍ້ມູນລົດຈິງທີ່ໄດ້ຮັບ (ເມື່ອ status = RECEIVED)
-  actualCar        Car? @relation("ActualReceivedCar", fields: [actualCarId], references: [id])
-  actualCarId      Int? // ລົດຈິງທີ່ໄດ້ຮັບ
+  id               Int       @id @default(autoincrement())
+  InputCar         InputCar? @relation(fields: [inputCarId], references: [id], onDelete: Cascade)
+  inputCarId       Int?
+  quantity         Int // ຈຳນວນທີ່ຄາດວ່າຈະໄດ້ຮັບ
+  car              Car?      @relation(fields: [carId], references: [id])
+  carId            Int? // ລົດທີ່ສັ່ງ (ຄາດການ)
   receivedQuantity Int? // ຈຳນວນທີ່ໄດ້ຮັບຈິງ
 
   // ລາຍລະອຽດລົດທີ່ນຳເຂົ້າຈິງ (ສຳລັບບັນທຶກປະຫວັດ)

@@ -75,7 +75,7 @@ const EditCar = () => {
       setForm({
         brandAndModelsId: carData.brandAndModelsId || "",
         name: carData.name || "",
-        licensePlate: carData.licensePlate || "",
+    
         year: carData.year || "",
         colorCarId: carData.colorCarId || "",
         vin: carData.vin || "",
@@ -235,16 +235,7 @@ const EditCar = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validation
-    if (!form.licensePlate.trim()) {
-      return toast.error("ກາລຸນາປ້ອນປ້າຍທະບຽນ");
-    }
-    if (!form.price || parseFloat(form.price) <= 0) {
-      return toast.error("ກາລຸນາປ້ອນລາຄາຂາຍທີ່ຖືກຕ້ອງ");
-    }
-    if (!form.costPrice || parseFloat(form.costPrice) <= 0) {
-      return toast.error("ກາລຸນາປ້ອນລາຄາຕົ້ນທຶນທີ່ຖືກຕ້ອງ");
-    }
+    
 
     try {
       const res = await updateCar(token, id, form);
@@ -386,21 +377,7 @@ const EditCar = () => {
                 />
               </div>
 
-              {/* License Plate */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ປ້າຍທະບຽນ *
-                </label>
-                <input
-                  type="text"
-                  name="licensePlate"
-                  value={form.licensePlate}
-                  onChange={handleChange}
-                  placeholder="ປ້ອນປ້າຍທະບຽນ"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
+              
 
               {/* Year */}
               <div>
@@ -552,36 +529,7 @@ const EditCar = () => {
               </div>
 
               {/* Price */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ລາຄາຂາຍ *
-                </label>
-                <input
-                  type="number"
-                  name="price"
-                  value={form.price}
-                  onChange={handleChange}
-                  placeholder="ປ້ອນລາຄາຂາຍ"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-
-              {/* Cost Price */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ລາຄາຕົ້ນທຶນ *
-                </label>
-                <input
-                  type="number"
-                  name="costPrice"
-                  value={form.costPrice}
-                  onChange={handleChange}
-                  placeholder="ປ້ອນລາຄາຕົ້ນທຶນ"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
+              
             </div>
 
             {/* Description */}

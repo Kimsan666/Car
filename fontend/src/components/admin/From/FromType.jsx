@@ -52,7 +52,9 @@ const FromType = () => {
               ຈັດການປະເພດລົດ
             </h1>
           </div>
-          <p className="text-gray-600 font-notosanslao">ເພີ່ມແລະຈັດການປະເພດລົດໃນລະບົບ</p>
+          <p className="text-gray-600 font-notosanslao">
+            ເພີ່ມແລະຈັດການປະເພດລົດໃນລະບົບ
+          </p>
         </div>
 
         {/* Add Form */}
@@ -80,10 +82,15 @@ const FromType = () => {
                   value={name}
                   disabled={isLoading}
                 />
+                <div className="text-xs font-notosanslao text-gray-500 text-right mt-1">
+                  {name?.length || 0}/191 ຕົວອັກສອນ
+                </div>
               </div>
 
               <div className="md:w-auto">
-                <label className="block text-sm font-medium text-gray-700 mb-2">&nbsp;</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  &nbsp;
+                </label>
                 <button
                   type="submit"
                   disabled={isLoading || !name.trim()}

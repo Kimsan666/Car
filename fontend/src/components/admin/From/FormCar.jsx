@@ -3,7 +3,21 @@ import React, { useState, useEffect } from "react";
 import useCarStore from "../../../Store/car-store";
 import { removeCar } from "../../../api/Car";
 import { toast } from "react-toastify";
-import { Trash, Edit, Search, ChevronDown, X, Eye, Plus, Filter, RotateCcw } from "lucide-react";
+import {
+  Trash,
+  Edit,
+  Search,
+  ChevronDown,
+  X,
+  Eye,
+  Plus,
+  Filter,
+  RotateCcw,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 
@@ -15,7 +29,7 @@ const FormCar = () => {
   const brandAndModels = useCarStore((state) => state.brandAndModels);
   const cars = useCarStore((state) => state.cars);
   const navigate = useNavigate();
-  
+
   const getBrand = useCarStore((state) => state.getBrand);
   const getColor = useCarStore((state) => state.getColor);
   const getType = useCarStore((state) => state.getType);
@@ -24,16 +38,20 @@ const FormCar = () => {
 
   // Search states
   const [searchTerm, setSearchTerm] = useState("");
-  
+
   // Filter states
   const [filterBrandSearch, setFilterBrandSearch] = useState("");
   const [filterModelSearch, setFilterModelSearch] = useState("");
   const [selectedFilterBrand, setSelectedFilterBrand] = useState(null);
   const [selectedFilterModel, setSelectedFilterModel] = useState(null);
-  
+
   // Dropdown visibility states
   const [showFilterBrandDropdown, setShowFilterBrandDropdown] = useState(false);
   const [showFilterModelDropdown, setShowFilterModelDropdown] = useState(false);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   useEffect(() => {
     getBrand();
@@ -43,43 +61,67 @@ const FormCar = () => {
     getCar();
   }, []);
 
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedFilterBrand, selectedFilterModel]);
+
   // Filter functions for search dropdowns
-  const filteredFilterBrands = brands.filter(brand =>
-    brand.name.toLowerCase().includes(filterBrandSearch.toLowerCase())
-  ).slice(0, 5);
+  const filteredFilterBrands = brands
+    .filter((brand) =>
+      brand.name.toLowerCase().includes(filterBrandSearch.toLowerCase())
+    )
+    .slice(0, 5);
 
   // Filter models based on selected filter brand
-  const availableFilterModels = selectedFilterBrand 
-    ? brandAndModels.filter(model => model.brandCarsId === selectedFilterBrand.id)
+  const availableFilterModels = selectedFilterBrand
+    ? brandAndModels.filter(
+        (model) => model.brandCarsId === selectedFilterBrand.id
+      )
     : brandAndModels;
-    
-  const filteredFilterModels = availableFilterModels.filter(model =>
-    model.modelCar.toLowerCase().includes(filterModelSearch.toLowerCase())
-  ).slice(0, 5);
+
+  const filteredFilterModels = availableFilterModels
+    .filter((model) =>
+      model.modelCar.toLowerCase().includes(filterModelSearch.toLowerCase())
+    )
+    .slice(0, 5);
 
   // Enhanced car filtering logic
-  const filteredCars = cars.filter(car => {
+  const filteredCars = cars.filter((car) => {
     // General search filter
-    const matchesSearch = !searchTerm || 
+    const matchesSearch =
+      !searchTerm ||
       car.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       car.licensePlate?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       car.brandCars?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      car.brandAndModels?.modelCar?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      car.brandAndModels?.modelCar
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
       car.colorCar?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       car.typecar?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       car.vin?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       car.engineNumber?.toLowerCase().includes(searchTerm.toLowerCase());
 
     // Brand filter
-    const matchesBrand = !selectedFilterBrand || 
-      car.brandCarsId === selectedFilterBrand.id;
+    const matchesBrand =
+      !selectedFilterBrand || car.brandCarsId === selectedFilterBrand.id;
 
-    // Model filter  
-    const matchesModel = !selectedFilterModel ||
-      car.brandAndModelsId === selectedFilterModel.id;
+    // Model filter
+    const matchesModel =
+      !selectedFilterModel || car.brandAndModelsId === selectedFilterModel.id;
 
     return matchesSearch && matchesBrand && matchesModel;
   });
+
+  // Pagination calculations
+  const totalItems = filteredCars.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentCars = filteredCars.slice(startIndex, endIndex);
+
+  // Items per page options
+  const itemsPerPageOptions = [10, 20, 30, 40, 50];
 
   // Handle filter brand selection
   const handleFilterBrandSelect = (brand) => {
@@ -105,10 +147,54 @@ const FormCar = () => {
     setFilterModelSearch("");
     setSelectedFilterBrand(null);
     setSelectedFilterModel(null);
+    setCurrentPage(1);
+  };
+
+  // Handle page change
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  // Handle items per page change
+  const handleItemsPerPageChange = (items) => {
+    setItemsPerPage(items);
+    setCurrentPage(1); // Reset to first page
+  };
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+
+    if (totalPages <= maxVisiblePages) {
+      // Show all pages if total pages is less than max visible
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Show pages around current page
+      let startPage = Math.max(1, currentPage - 2);
+      let endPage = Math.min(totalPages, currentPage + 2);
+
+      // Adjust if we're near the beginning or end
+      if (currentPage <= 3) {
+        endPage = Math.min(maxVisiblePages, totalPages);
+      }
+      if (currentPage >= totalPages - 2) {
+        startPage = Math.max(1, totalPages - maxVisiblePages + 1);
+      }
+
+      for (let i = startPage; i <= endPage; i++) {
+        pages.push(i);
+      }
+    }
+
+    return pages;
   };
 
   // Check if any filters are active
-  const hasActiveFilters = searchTerm || selectedFilterBrand || selectedFilterModel;
+  const hasActiveFilters =
+    searchTerm || selectedFilterBrand || selectedFilterModel;
 
   const handleDelete = async (id) => {
     if (window.confirm("ທ່ານແນ່ໃຈບໍ່ທີ່ຈະລົບລົດນີ້?")) {
@@ -134,7 +220,7 @@ const FormCar = () => {
               <h1 className="text-2xl font-bold text-gray-800">ຈັດການລົດ</h1>
               <p className="text-sm text-gray-600">ຈັດການຂໍ້ມູນລົດຂອງຮ້ານ</p>
             </div>
-            
+
             <Link
               to="/admin/car/create"
               className="flex items-center space-x-2 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
@@ -152,55 +238,19 @@ const FormCar = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-blue-600">ລົດທັງໝົດ</p>
-                  <p className="text-2xl font-bold text-blue-700">{cars.length}</p>
+                  <p className="text-2xl font-bold text-blue-700">
+                    {cars.length}
+                  </p>
                 </div>
                 <div className="p-2 bg-blue-200 rounded-lg">
                   <Eye className="h-6 w-6 text-blue-600" />
                 </div>
               </div>
             </div>
+
             
-            <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-green-600">ວ່າງ</p>
-                  <p className="text-2xl font-bold text-green-700">
-                    {cars.filter(car => car.status === 'Available').length}
-                  </p>
-                </div>
-                <div className="p-2 bg-green-200 rounded-lg">
-                  <Eye className="h-6 w-6 text-green-600" />
-                </div>
-              </div>
-            </div>
+
             
-            <div className="bg-gradient-to-r from-red-50 to-red-100 p-4 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-red-600">ຂາຍແລ້ວ</p>
-                  <p className="text-2xl font-bold text-red-700">
-                    {cars.filter(car => car.status === 'Sold').length}
-                  </p>
-                </div>
-                <div className="p-2 bg-red-200 rounded-lg">
-                  <Eye className="h-6 w-6 text-red-600" />
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 p-4 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-yellow-600">ຈອງແລ້ວ</p>
-                  <p className="text-2xl font-bold text-yellow-700">
-                    {cars.filter(car => car.status === 'Reserved').length}
-                  </p>
-                </div>
-                <div className="p-2 bg-yellow-200 rounded-lg">
-                  <Eye className="h-6 w-6 text-yellow-600" />
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Search and Filter Section */}
@@ -213,7 +263,7 @@ const FormCar = () => {
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="ຄົ້ນຫາທົ່ວໄປ (ຊື່, ປ້າຍທະບຽນ, VIN, ແບຣນ...)"
+                  placeholder="ຄົ້ນຫາທົ່ວໄປ (ຊື່ລົດ...)"
                   className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -234,10 +284,12 @@ const FormCar = () => {
             <div className="bg-gray-50 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Filter className="h-4 w-4 text-gray-600" />
-                <h3 className="text-sm font-medium text-gray-700">ການກັ່ນຕອງແບບລະອຽດ</h3>
+                <h3 className="text-sm font-medium text-gray-700">
+                  ການກັ່ນຕອງແບບລະອຽດ
+                </h3>
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Brand Filter */}
                 <div className="relative">
                   <label className="block text-xs font-medium text-gray-600 mb-1">
@@ -256,7 +308,7 @@ const FormCar = () => {
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
                     />
                     <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    
+
                     {/* Selected Brand Indicator */}
                     {selectedFilterBrand && (
                       <div className="absolute right-8 top-1/2 transform -translate-y-1/2">
@@ -275,7 +327,7 @@ const FormCar = () => {
                       </div>
                     )}
                   </div>
-                  
+
                   {showFilterBrandDropdown && (
                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-40 overflow-y-auto">
                       {filteredFilterBrands.length > 0 ? (
@@ -284,14 +336,18 @@ const FormCar = () => {
                             key={brand.id}
                             onClick={() => handleFilterBrandSelect(brand)}
                             className={`px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer border-b last:border-b-0 ${
-                              selectedFilterBrand?.id === brand.id ? 'bg-blue-100 text-blue-800' : ''
+                              selectedFilterBrand?.id === brand.id
+                                ? "bg-blue-100 text-blue-800"
+                                : ""
                             }`}
                           >
                             {brand.name}
                           </div>
                         ))
                       ) : (
-                        <div className="px-3 py-2 text-sm text-gray-500">ບໍ່ພົບແບຣນທີ່ຄົ້ນຫາ</div>
+                        <div className="px-3 py-2 text-sm text-gray-500">
+                          ບໍ່ພົບແບຣນທີ່ຄົ້ນຫາ
+                        </div>
                       )}
                     </div>
                   )}
@@ -311,12 +367,14 @@ const FormCar = () => {
                         setShowFilterModelDropdown(true);
                       }}
                       onFocus={() => setShowFilterModelDropdown(true)}
-                      placeholder={selectedFilterBrand ? "ເລືອກລຸ້ນ..." : "ເລືອກແບຣນກ່ອນ"}
+                      placeholder={
+                        selectedFilterBrand ? "ເລືອກລຸ້ນ..." : "ເລືອກແບຣນກ່ອນ"
+                      }
                       disabled={!selectedFilterBrand}
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     />
                     <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    
+
                     {/* Selected Model Indicator */}
                     {selectedFilterModel && (
                       <div className="absolute right-8 top-1/2 transform -translate-y-1/2">
@@ -333,7 +391,7 @@ const FormCar = () => {
                       </div>
                     )}
                   </div>
-                  
+
                   {showFilterModelDropdown && selectedFilterBrand && (
                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-40 overflow-y-auto">
                       {filteredFilterModels.length > 0 ? (
@@ -342,24 +400,53 @@ const FormCar = () => {
                             key={model.id}
                             onClick={() => handleFilterModelSelect(model)}
                             className={`px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer border-b last:border-b-0 ${
-                              selectedFilterModel?.id === model.id ? 'bg-blue-100 text-blue-800' : ''
+                              selectedFilterModel?.id === model.id
+                                ? "bg-blue-100 text-blue-800"
+                                : ""
                             }`}
                           >
                             {model.modelCar}
                           </div>
                         ))
                       ) : (
-                        <div className="px-3 py-2 text-sm text-gray-500">ບໍ່ພົບລຸ້ນທີ່ຄົ້ນຫາ</div>
+                        <div className="px-3 py-2 text-sm text-gray-500">
+                          ບໍ່ພົບລຸ້ນທີ່ຄົ້ນຫາ
+                        </div>
                       )}
                     </div>
                   )}
                 </div>
 
+                {/* Items Per Page Selector */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    ຈໍານວນລາຍການຕໍ່ໜ້າ
+                  </label>
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) =>
+                      handleItemsPerPageChange(Number(e.target.value))
+                    }
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {itemsPerPageOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option} ລາຍການ
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 {/* Results Counter */}
                 <div className="flex items-end">
-                  <div className="bg-blue-50 border border-blue-200 rounded-md px-3 py-2 text-sm">
+                  <div className="bg-blue-50 border border-blue-200 rounded-md px-3 py-2 text-sm w-full">
                     <span className="text-blue-600 font-medium">
                       ຜົນການຄົ້ນຫາ: {filteredCars.length} ຄັນ
+                    </span>
+                    <br />
+                    <span className="text-xs text-gray-600">
+                      ສະແດງ {startIndex + 1}-{Math.min(endIndex, totalItems)}{" "}
+                      ຈາກ {totalItems}
                     </span>
                   </div>
                 </div>
@@ -369,8 +456,10 @@ const FormCar = () => {
               {hasActiveFilters && (
                 <div className="mt-3 pt-3 border-t border-gray-200">
                   <div className="flex flex-wrap gap-2">
-                    <span className="text-xs text-gray-600">ການກັ່ນຕອງທີ່ເປີດໃຊ້:</span>
-                    
+                    <span className="text-xs text-gray-600">
+                      ການກັ່ນຕອງທີ່ເປີດໃຊ້:
+                    </span>
+
                     {searchTerm && (
                       <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
                         ຄົ້ນຫາ: "{searchTerm}"
@@ -382,7 +471,7 @@ const FormCar = () => {
                         </button>
                       </span>
                     )}
-                    
+
                     {selectedFilterBrand && (
                       <span className="inline-flex items-center gap-1 bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
                         ແບຣນ: {selectedFilterBrand.name}
@@ -399,7 +488,7 @@ const FormCar = () => {
                         </button>
                       </span>
                     )}
-                    
+
                     {selectedFilterModel && (
                       <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded">
                         ລຸ້ນ: {selectedFilterModel.modelCar}
@@ -432,22 +521,16 @@ const FormCar = () => {
                     ຮູບພາບ
                   </th>
                   <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    ປ້າຍທະບຽນ
+                    ແບຣນ
                   </th>
                   <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    ແບຣນ/ລຸ້ນ
+                    ລຸ້ນ
                   </th>
                   <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    ສີ
+                    ປະເພດ
                   </th>
                   <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    ປີ
-                  </th>
-                  <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    ລາຄາ
-                  </th>
-                  <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    ສະຖານະ
+                    ລາຍລະອຽດ
                   </th>
                   <th className="py-3 px-6 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     ຈັດການ
@@ -455,11 +538,12 @@ const FormCar = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredCars.map((car, index) => (
+                {currentCars.map((car, index) => (
                   <tr key={car.id} className="hover:bg-gray-50">
                     <td className="py-4 px-6 text-sm text-gray-900">
-                      {index + 1}
+                      {startIndex + index + 1}
                     </td>
+                
                     <td className="py-4 px-6">
                       {car.images && car.images.length > 0 ? (
                         <img
@@ -469,36 +553,23 @@ const FormCar = () => {
                         />
                       ) : (
                         <div className="w-16 h-12 bg-gray-200 rounded flex items-center justify-center">
-                          <span className="text-xs text-gray-500">ບໍ່ມີຮູບ</span>
+                          <span className="text-xs text-gray-500">
+                            ບໍ່ມີຮູບ
+                          </span>
                         </div>
                       )}
                     </td>
                     <td className="py-4 px-6 text-sm text-gray-900">
-                      {car.licensePlate}
+                      {car.brandCars?.name}
                     </td>
                     <td className="py-4 px-6 text-sm text-gray-900">
-                      {car.brandCars?.name} {car.brandAndModels?.modelCar}
+                      {car.brandAndModels?.modelCar}
                     </td>
                     <td className="py-4 px-6 text-sm text-gray-900">
-                      {car.colorCar?.name}
+                      {car.typecar?.name}
                     </td>
                     <td className="py-4 px-6 text-sm text-gray-900">
-                      {car.year}
-                    </td>
-                    <td className="py-4 px-6 text-sm text-gray-900">
-                      {new Intl.NumberFormat('lo-LA').format(car.price)} ₭
-                    </td>
-                    <td className="py-4 px-6">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        car.status === 'Available' ? 'bg-green-100 text-green-800' :
-                        car.status === 'Sold' ? 'bg-red-100 text-red-800' :
-                        car.status === 'Reserved' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {car.status === 'Available' ? 'ວ່າງ' :
-                         car.status === 'Sold' ? 'ຂາຍແລ້ວ' :
-                         car.status === 'Reserved' ? 'ຈອງແລ້ວ' : 'ບຳລຸງຮັກສາ'}
-                      </span>
+                      {car.description}
                     </td>
                     <td className="py-4 px-6 text-center">
                       <div className="flex justify-center space-x-2">
@@ -527,12 +598,116 @@ const FormCar = () => {
               </tbody>
             </table>
 
-            {filteredCars.length === 0 && (
+            {currentCars.length === 0 && (
               <div className="text-center py-8 text-gray-500">
-                {hasActiveFilters ? "ບໍ່ພົບຂໍ້ມູນທີ່ຕົງກັບການຄົ້ນຫາ" : "ບໍ່ມີຂໍ້ມູນ"}
+                {hasActiveFilters
+                  ? "ບໍ່ພົບຂໍ້ມູນທີ່ຕົງກັບການຄົ້ນຫາ"
+                  : "ບໍ່ມີຂໍ້ມູນ"}
               </div>
             )}
           </div>
+
+          {/* Pagination Section */}
+          {filteredCars.length > 0 && totalPages > 1 && (
+            <div className="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+              {/* Pagination Info */}
+              <div className="text-sm text-gray-600">
+                ສະແດງ {startIndex + 1} ຫາ {Math.min(endIndex, totalItems)} ຈາກ{" "}
+                {totalItems} ລາຍການ
+              </div>
+
+              {/* Pagination Controls */}
+              <div className="flex items-center space-x-2">
+                {/* First Page */}
+                <button
+                  onClick={() => handlePageChange(1)}
+                  disabled={currentPage === 1}
+                  className={`p-2 rounded-md ${
+                    currentPage === 1
+                      ? "text-gray-400 cursor-not-allowed"
+                      : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                </button>
+
+                {/* Previous Page */}
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className={`p-2 rounded-md ${
+                    currentPage === 1
+                      ? "text-gray-400 cursor-not-allowed"
+                      : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+
+                {/* Page Numbers */}
+                <div className="flex space-x-1">
+                  {getPageNumbers().map((pageNum) => (
+                    <button
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`px-3 py-2 text-sm rounded-md ${
+                        currentPage === pageNum
+                          ? "bg-blue-500 text-white"
+                          : "text-gray-600 hover:bg-gray-100"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Next Page */}
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className={`p-2 rounded-md ${
+                    currentPage === totalPages
+                      ? "text-gray-400 cursor-not-allowed"
+                      : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+
+                {/* Last Page */}
+                <button
+                  onClick={() => handlePageChange(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className={`p-2 rounded-md ${
+                    currentPage === totalPages
+                      ? "text-gray-400 cursor-not-allowed"
+                      : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Quick Page Jump */}
+              <div className="flex items-center space-x-2 text-sm">
+                <span className="text-gray-600">ໄປຫາໜ້າ:</span>
+                <input
+                  type="number"
+                  min="1"
+                  max={totalPages}
+                  value={currentPage}
+                  onChange={(e) => {
+                    const page = parseInt(e.target.value);
+                    if (page >= 1 && page <= totalPages) {
+                      handlePageChange(page);
+                    }
+                  }}
+                  className="w-16 px-2 py-1 border border-gray-300 rounded text-center"
+                />
+                <span className="text-gray-600">/ {totalPages}</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

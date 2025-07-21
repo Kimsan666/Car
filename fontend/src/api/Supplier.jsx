@@ -39,8 +39,8 @@ export const saveSupplier = async (token, from) => {
 };
 
 // ອັບເດດຂໍ້ມູນລູກຄ້າ
-export const updateSupplier = async (token, id, from) => {
-  return await axios.put(`${API_URL}/colorcar/${id}`, from, {
+export const updateSupplier = async (token, id, form) => {
+  return await axios.put(`${API_URL}/supplier/${id}`, form, {
     headers: {
       Authorization: `Bearer ${token}`,
     },

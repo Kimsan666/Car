@@ -48,11 +48,13 @@ const FormBrand = () => {
             <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
               <Car className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-800 font-Sanslem">
+            <h1 className="text-2xl font-bold font-notosanslao text-gray-800 font-Sanslem">
               ຈັດການແບນລົດ
             </h1>
           </div>
-          <p className="text-gray-600 font-notosanslao">ເພີ່ມແລະຈັດການແບນລົດໃນລະບົບ</p>
+          <p className="text-gray-600 font-notosanslao">
+            ເພີ່ມແລະຈັດການແບນລົດໃນລະບົບ
+          </p>
         </div>
 
         {/* Add Form */}
@@ -80,10 +82,15 @@ const FormBrand = () => {
                   value={name}
                   disabled={isLoading}
                 />
+                <div className="text-xs font-notosanslao text-gray-500 text-right mt-1">
+                  {name?.length || 0}/191 ຕົວອັກສອນ
+                </div>
               </div>
 
               <div className="md:w-auto">
-                <label className="block text-sm font-medium text-gray-700 mb-2">&nbsp;</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  &nbsp;
+                </label>
                 <button
                   type="submit"
                   disabled={isLoading || !name.trim()}

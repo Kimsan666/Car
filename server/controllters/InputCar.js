@@ -1,3 +1,5 @@
+const prisma = require('../config/prisma');
+
 // ຟັງຊັນສ້າງ InputCar ໃໝ່
 exports.saveInputCar = async (req, res) => {
   try {

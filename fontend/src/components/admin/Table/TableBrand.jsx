@@ -5,15 +5,15 @@ import useCarStore from "../../../Store/car-store";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { removeBrand } from "../../../api/Brand";
-import { 
-  Search, 
-  X, 
-  Edit, 
-  Trash2, 
-  Eye, 
+import {
+  Search,
+  X,
+  Edit,
+  Trash2,
+  Eye,
   Calendar,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
 } from "lucide-react";
 
 const TableBrand = () => {
@@ -33,14 +33,14 @@ const TableBrand = () => {
 
   const filteredbrands = useMemo(() => {
     if (!brands || !Array.isArray(brands)) return [];
-    
+
     if (!searchTerm.trim()) return brands;
 
     return brands.filter((brands) =>
       brands.name?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [brands, searchTerm]);
-
+  console.log(brands)
   React.useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
@@ -69,8 +69,10 @@ const TableBrand = () => {
       cancelButtonText: "ຍົກເລີກ",
       customClass: {
         popup: "font-phetsarath rounded-lg shadow-lg",
-        confirmButton: "bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md mr-2",
-        cancelButton: "bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md",
+        confirmButton:
+          "bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md mr-2",
+        cancelButton:
+          "bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md",
       },
       buttonsStyling: false,
     });
@@ -114,7 +116,9 @@ const TableBrand = () => {
         <div className="flex justify-center items-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-3"></div>
-            <div className="text-gray-500 font-phetsarath">ກຳລັງໂຫລດຂໍ້ມູນ...</div>
+            <div className="text-gray-500 font-phetsarath">
+              ກຳລັງໂຫລດຂໍ້ມູນ...
+            </div>
           </div>
         </div>
       </div>
@@ -197,7 +201,10 @@ const TableBrand = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {formatDate(item.updatedAt)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center" onClick={(e) => e.stopPropagation()}>
+                  <td
+                    className="px-6 py-4 whitespace-nowrap text-center"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <div className="flex justify-center space-x-2">
                       <button
                         onClick={(e) => {
@@ -237,7 +244,9 @@ const TableBrand = () => {
                 <td colSpan="4" className="px-6 py-12 text-center">
                   <div className="text-gray-500 font-phetsarath">
                     <p className="text-lg">
-                      {searchTerm ? "ບໍ່ພົບຂໍ້ມູນທີ່ຄົ້ນຫາ" : "ບໍ່ມີຂໍ້ມູນແບນລົດ"}
+                      {searchTerm
+                        ? "ບໍ່ພົບຂໍ້ມູນທີ່ຄົ້ນຫາ"
+                        : "ບໍ່ມີຂໍ້ມູນແບນລົດ"}
                     </p>
                     {searchTerm && (
                       <button
@@ -260,7 +269,9 @@ const TableBrand = () => {
         <div className="px-6 py-4 border-t border-gray-200">
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-700 font-phetsarath">
-              ສະແດງ {indexOfFirst + 1} ຫາ {Math.min(indexOfLast, filteredbrands.length)} ຈາກທັງໝົດ {filteredbrands.length} ລາຍການ
+              ສະແດງ {indexOfFirst + 1} ຫາ{" "}
+              {Math.min(indexOfLast, filteredbrands.length)} ຈາກທັງໝົດ{" "}
+              {filteredbrands.length} ລາຍການ
             </div>
             <div className="flex items-center space-x-2">
               <button
@@ -270,7 +281,7 @@ const TableBrand = () => {
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              
+
               <span className="px-3 py-2 text-sm text-gray-700 font-phetsarath">
                 ໜ້າ {currentPage} ຈາກ {totalPages}
               </span>

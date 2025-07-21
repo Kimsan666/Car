@@ -62,7 +62,7 @@ exports.saveCustomer = async (req, res) => {
     }
 
     // ກວດສອບປະເພດເອກະສານທີ່ອະນຸຍາດ
-    const allowedDocumentTypes = ['passport', 'id_card', 'driving_license', 'other'];
+    const allowedDocumentTypes = ['passport', 'id_card', 'driving_license', 'census'];
     if (!allowedDocumentTypes.includes(documentsType.toLowerCase())) {
       return res.status(400).json({
         message: "ປະເພດເອກະສານບໍ່ຖືກຕ້ອງ",
@@ -126,16 +126,6 @@ exports.listCustomers = async (req, res) => {
       orderBy: { createdAt: "desc" },
       include: {
         images: true,
-        Order: {
-          include: {
-            Car: {
-              select: {
-                name: true,
-                licensePlate: true,
-              }
-            }
-          }
-        }
       },
     });
     

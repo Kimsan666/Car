@@ -11,7 +11,17 @@ import { listTypes } from "../api/Type";
 import { listBrandAndModels } from "../api/BrandAndModel";
 import { listCars } from "../api/Car";
 import { listSuppliers, listSuppliersEnabled } from "../api/Supplier";
-
+import { listSuppliersProduct } from "../api/SupplierProduct";
+import { 
+  listInputCars, 
+  readInputCar, 
+  saveInputCar, 
+  updateInputCar, 
+  removeInputCar,
+  updateInputCarStatus,
+  searchInputCars,
+  receiveActualCars 
+} from "../api/InputCar";
 const carStore = (set, get) => ({
   user: null,
   token: null,
@@ -23,15 +33,172 @@ const carStore = (set, get) => ({
   brandAndModels: [], // เพิ่ม state สำหรับ brand and models
   cars: [], // เพิ่ม state สำหรับ cars
   suppliers: [],
-  suppliersenabled: [],
+  suppliersproducts: [],
+  inputCars: [],
+  currentInputCar: null,
 
-  // Car functions
-  getSuppliersEnabled: async () => {
+  // ... existing functions ...
+
+  // InputCar functions
+  getInputCars: async (queryParams = {}) => {
     try {
       const { token } = get();
-      const res = await listSuppliersEnabled(token);
+      const res = await listInputCars(token, queryParams);
       set({
-        suppliersenabled: res.data,
+        inputCars: res.data.data,
+      });
+      return res.data;
+    } catch (err) {
+      console.log(err);
+      throw err;
+    }
+  },
+
+  getInputCar: async (id) => {
+    try {
+      const { token } = get();
+      const res = await readInputCar(token, id);
+      set({
+        currentInputCar: res.data.data,
+      });
+      return res.data;
+    } catch (err) {
+      console.log(err);
+      throw err;
+    }
+  },
+
+  createInputCar: async (inputCarData) => {
+    try {
+      const { token } = get();
+      const res = await saveInputCar(token, inputCarData);
+
+      // Refresh input cars list
+      const inputCarsRes = await listInputCars(token);
+      set({
+        inputCars: inputCarsRes.data.data,
+      });
+
+      return res.data;
+    } catch (err) {
+      console.log(err);
+      throw err;
+    }
+  },
+
+  updateInputCar: async (id, inputCarData) => {
+    try {
+      const { token } = get();
+      const res = await updateInputCar(token, id, inputCarData);
+
+      // Refresh input cars list
+      const inputCarsRes = await listInputCars(token);
+      set({
+        inputCars: inputCarsRes.data.data,
+      });
+
+      return res.data;
+    } catch (err) {
+      console.log(err);
+      throw err;
+    }
+  },
+
+  deleteInputCar: async (id) => {
+    try {
+      const { token } = get();
+      const res = await removeInputCar(token, id);
+
+      // Refresh input cars list
+      const inputCarsRes = await listInputCars(token);
+      set({
+        inputCars: inputCarsRes.data.data,
+      });
+
+      return res.data;
+    } catch (err) {
+      console.log(err);
+      throw err;
+    }
+  },
+
+  updateInputCarStatus: async (id, status) => {
+    try {
+      const { token } = get();
+      const res = await updateInputCarStatus(token, id, { status });
+
+      // Refresh input cars list
+      const inputCarsRes = await listInputCars(token);
+      set({
+        inputCars: inputCarsRes.data.data,
+      });
+
+      return res.data;
+    } catch (err) {
+      console.log(err);
+      throw err;
+    }
+  },
+
+  searchInputCars: async (searchData) => {
+    try {
+      const { token } = get();
+      const res = await searchInputCars(token, searchData);
+      set({
+        inputCars: res.data.data,
+      });
+      return res.data;
+    } catch (err) {
+      console.log(err);
+      throw err;
+    }
+  },
+
+  receiveActualCars: async (inputCarId, receivedData) => {
+    try {
+      const { token } = get();
+      const res = await receiveActualCars(token, inputCarId, receivedData);
+
+      // Refresh input cars list
+      const inputCarsRes = await listInputCars(token);
+      set({
+        inputCars: inputCarsRes.data.data,
+        currentInputCar: res.data.inputCar,
+      });
+
+      return res.data;
+    } catch (err) {
+      console.log(err);
+      throw err;
+    }
+  },
+
+  // Utility function สำหรับดึงใบสั่งซื้อที่อนุมัติแล้ว
+  getConfirmedPurchasesForInput: async () => {
+    try {
+      const { token } = get();
+      const res = await listPurchases(token, { status: "CONFIRMED" });
+      return res.data;
+    } catch (err) {
+      console.log(err);
+      throw err;
+    }
+  },
+
+  // ล้างข้อมูล currentInputCar
+  clearCurrentInputCar: () => {
+    set({
+      currentInputCar: null,
+    });
+  },
+  // Car functions
+  getSuppliersProduct: async () => {
+    try {
+      const { token } = get();
+      const res = await listSuppliersProduct(token);
+      console.log("ssssddddddddddwa", res.data);
+      set({
+        suppliersproducts: res.data.data,
       });
     } catch (err) {
       console.log(err);
@@ -48,6 +215,7 @@ const carStore = (set, get) => ({
       console.log(err);
     }
   },
+
   getCar: async () => {
     try {
       const { token } = get();
@@ -104,7 +272,8 @@ const carStore = (set, get) => ({
   },
   getCustomer: async () => {
     try {
-      const res = await listCustomers();
+      const { token } = get();
+      const res = await listCustomers(token);
       set({
         customers: res.data,
       });

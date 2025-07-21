@@ -11,49 +11,12 @@ exports.saveCar = async (req, res) => {
   try {
     const {
       brandAndModelsId,
-      name,
-      licensePlate,
-      year,
-      colorCarId,
-      vin,
-      engineNumber,
       typeId,
-      status,
-      price,
-      costPrice,
       description,
       brandCarsId,
       images,
       imaged,
     } = req.body;
-
-    // ກວດສອບວ່າມີ licensePlate ຊ້ຳກັນຫຼືບໍ່
-    const existingLicensePlate = await prisma.car.findUnique({
-      where: {
-        licensePlate: licensePlate,
-      },
-    });
-
-    if (existingLicensePlate) {
-      return res.status(400).json({
-        message: "ມີປ້າຍທະບຽນລົດນີ້ຢູ່ແລ້ວ",
-      });
-    }
-
-    // ກວດສອບວ່າມີ VIN ຊ້ຳກັນຫຼືບໍ່ (ຖ້າມີ)
-    if (vin) {
-      const existingVin = await prisma.car.findUnique({
-        where: {
-          vin: vin,
-        },
-      });
-
-      if (existingVin) {
-        return res.status(400).json({
-          message: "ມີເລກ VIN ນີ້ຢູ່ແລ້ວ",
-        });
-      }
-    }
 
     // ກວດສອບວ່າ Brand and Model ມີຢູ່ຈິງຫຼືບໍ່
     if (brandAndModelsId) {
@@ -66,21 +29,6 @@ exports.saveCar = async (req, res) => {
       if (!brandModel) {
         return res.status(400).json({
           message: "ບໍ່ພົບຂໍ້ມູນແບຣນແລະລຸ້ນທີ່ລະບຸ",
-        });
-      }
-    }
-
-    // ກວດສອບວ່າ Color ມີຢູ່ຈິງຫຼືບໍ່
-    if (colorCarId) {
-      const color = await prisma.colorCar.findUnique({
-        where: {
-          id: parseInt(colorCarId),
-        },
-      });
-
-      if (!color) {
-        return res.status(400).json({
-          message: "ບໍ່ພົບສີລົດທີ່ລະບຸ",
         });
       }
     }
@@ -119,16 +67,7 @@ exports.saveCar = async (req, res) => {
     const car = await prisma.car.create({
       data: {
         brandAndModelsId: brandAndModelsId ? parseInt(brandAndModelsId) : null,
-        name: name,
-        licensePlate: licensePlate,
-        year: year ? parseInt(year) : null,
-        colorCarId: colorCarId ? parseInt(colorCarId) : null,
-        vin: vin || null,
-        engineNumber: engineNumber || null,
         typeId: typeId ? parseInt(typeId) : null,
-        status: status || "Available",
-        price: parseFloat(price),
-        costPrice: parseFloat(costPrice),
         description: description || null,
         brandCarsId: brandCarsId ? parseInt(brandCarsId) : null,
         // ບັນທຶກຮູບພາບໃນຕາຕະລາງ Image
@@ -156,18 +95,6 @@ exports.saveCar = async (req, res) => {
               }
             : undefined,
       },
-      include: {
-        brandAndModels: {
-          include: {
-            BrandCars: true,
-          },
-        },
-        colorCar: true,
-        typecar: true,
-        brandCars: true,
-        images: true,
-        imaged: true,
-      },
     });
 
     res.status(201).json({
@@ -190,11 +117,6 @@ exports.listCar = async (req, res) => {
       },
       include: {
         brandCars: {
-          select: {
-            name: true,
-          },
-        },
-        colorCar: {
           select: {
             name: true,
           },
@@ -238,7 +160,6 @@ exports.readCar = async (req, res) => {
       },
       include: {
         brandCars: true,
-        colorCar: true,
         typecar: true,
         brandAndModels: true,
         images: true,
@@ -256,16 +177,8 @@ exports.updateCar = async (req, res) => {
   try {
     const {
       brandAndModelsId,
-      name,
-      licensePlate,
-      year,
-      colorCarId,
-      vin,
-      engineNumber,
+
       typeId,
-      status,
-      price,
-      costPrice,
       description,
       brandCarsId,
       images,
@@ -273,39 +186,7 @@ exports.updateCar = async (req, res) => {
     } = req.body;
     const { id } = req.params;
     // code
-    // ກວດສອບວ່າມີ licensePlate ຊ້ຳກັນຫຼືບໍ່
-    const existingLicensePlate = await prisma.car.findUnique({
-      where: {
-        licensePlate: licensePlate,
-        NOT: {
-          id: Number(id),
-        },
-      },
-    });
-
-    if (existingLicensePlate) {
-      return res.status(400).json({
-        message: "ມີປ້າຍທະບຽນລົດນີ້ຢູ່ແລ້ວ",
-      });
-    }
-
-    // ກວດສອບວ່າມີ VIN ຊ້ຳກັນຫຼືບໍ່ (ຖ້າມີ)
-    if (vin) {
-      const existingVin = await prisma.car.findUnique({
-        where: {
-          vin: vin,
-          NOT: {
-            id: Number(id),
-          },
-        },
-      });
-
-      if (existingVin) {
-        return res.status(400).json({
-          message: "ມີເລກ VIN ນີ້ຢູ່ແລ້ວ",
-        });
-      }
-    }
+    
 
     // ກວດສອບວ່າ Brand and Model ມີຢູ່ຈິງຫຼືບໍ່
     if (brandAndModelsId) {
@@ -318,21 +199,6 @@ exports.updateCar = async (req, res) => {
       if (!brandModel) {
         return res.status(400).json({
           message: "ບໍ່ພົບຂໍ້ມູນແບຣນແລະລຸ້ນທີ່ລະບຸ",
-        });
-      }
-    }
-
-    // ກວດສອບວ່າ Color ມີຢູ່ຈິງຫຼືບໍ່
-    if (colorCarId) {
-      const color = await prisma.colorCar.findUnique({
-        where: {
-          id: parseInt(colorCarId),
-        },
-      });
-
-      if (!color) {
-        return res.status(400).json({
-          message: "ບໍ່ພົບສີລົດທີ່ລະບຸ",
         });
       }
     }
@@ -384,16 +250,7 @@ exports.updateCar = async (req, res) => {
       },
       data: {
         brandAndModelsId: brandAndModelsId ? parseInt(brandAndModelsId) : null,
-        name: name,
-        licensePlate: licensePlate,
-        year: year ? parseInt(year) : null,
-        colorCarId: colorCarId ? parseInt(colorCarId) : null,
-        vin: vin || null,
-        engineNumber: engineNumber || null,
         typeId: typeId ? parseInt(typeId) : null,
-        status: status || "Available",
-        price: parseFloat(price),
-        costPrice: parseFloat(costPrice),
         description: description || null,
         brandCarsId: brandCarsId ? parseInt(brandCarsId) : null,
         // ບັນທຶກຮູບພາບໃນຕາຕະລາງ Image
@@ -421,18 +278,6 @@ exports.updateCar = async (req, res) => {
               }
             : undefined,
       },
-      include: {
-        brandAndModels: {
-          include: {
-            BrandCars: true,
-          },
-        },
-        colorCar: true,
-        typecar: true,
-        brandCars: true,
-        images: true,
-        imaged: true,
-      },
     });
     res.send("Update Success");
   } catch (err) {
@@ -458,11 +303,9 @@ exports.removeCar = async (req, res) => {
           images: true,
           imaged: true,
           brandAndModels: true,
-          colorCar: true,
           brandCars: true,
           typecar: true,
           // ກວດສອບຂໍ້ມູນທີ່ເຊື່ອມຕໍ່ກັບລົດ
-          Order: true,
           supplierProducts: true,
           itemonPurches: true,
           itemonInputcar: true,
@@ -473,10 +316,6 @@ exports.removeCar = async (req, res) => {
         throw new Error("ບໍ່ພົບລົດທີ່ຕ້ອງການລົບ");
       }
 
-      // ກວດສອບວ່າລົດຍັງຖືກໃຊ້ຢູ່ໃນຕາຕະລາງອື່ນຫຼືບໍ່
-      if (car.Order.length > 0) {
-        throw new Error("ບໍ່ສາມາດລົບລົດໄດ້ເພາະມີການສັ່ງຊື້ແລ້ວ");
-      }
 
       if (car.supplierProducts.length > 0) {
         throw new Error("ບໍ່ສາມາດລົບລົດໄດ້ເພາະຍັງເຊື່ອມຕໍ່ກັບຜູ້ສະໜອງ");

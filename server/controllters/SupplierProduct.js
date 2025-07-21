@@ -66,31 +66,8 @@ exports.saveSupplierProduct = async (req, res) => {
         isActive: isActive !== undefined ? isActive : true,
         notes: notes || null,
       },
-      include: {
-        supplier: {
-          select: {
-            id: true,
-            companyName: true,
-            contactName: true,
-            email: true,
-            phone: true,
-          }
-        },
-        Car: {
-          include: {
-            brandAndModels: {
-              include: {
-                BrandCars: true
-              }
-            },
-            colorCar: true,
-            typecar: true,
-            images: {
-              take: 1, // ເອົາແຕ່ຮູບທຳອິດ
-            }
-          }
-        },
-      },
+      
+    
     });
 
     res.status(201).json({
@@ -147,14 +124,13 @@ exports.listSupplierProducts = async (req, res) => {
             phone: true,
           }
         },
-        Car: {
+        car: {
           include: {
             brandAndModels: {
               include: {
                 BrandCars: true
               }
             },
-            colorCar: true,
             typecar: true,
             images: {
               take: 1,
@@ -349,102 +325,7 @@ exports.removeSupplierProduct = async (req, res) => {
   }
 };
 
-// ຟັງຊັນຄົ້ນຫາການເຊື່ອມຕໍ່ 
-exports.searchSupplierProducts = async (req, res) => {
-  try {
-    const { query, supplierId, carId, isActive } = req.body;
-    
-    let whereCondition = {};
-    
-    // ຖ້າມີການຄົ້ນຫາດ້ວຍຂໍ້ຄວາມ
-    if (query && query.trim() !== "") {
-      whereCondition.OR = [
-        {
-          supplier: {
-            companyName: {
-              contains: query.trim(),
-            },
-          },
-        },
-        {
-          Car: {
-            name: {
-              contains: query.trim(),
-            },
-          },
-        },
-        {
-          Car: {
-            licensePlate: {
-              contains: query.trim(),
-            },
-          },
-        },
-        {
-          notes: {
-            contains: query.trim(),
-          },
-        },
-      ];
-    }
-    
-    // ຖ້າມີການກໍາງຕາມຜູ້ສະໜອງ
-    if (supplierId) {
-      whereCondition.supplierId = parseInt(supplierId);
-    }
-    
-    // ຖ້າມີການກໍາງຕາມລົດ
-    if (carId) {
-      whereCondition.carId = parseInt(carId);
-    }
-    
-    // ຖ້າມີການກໍາງຕາມສະຖານະ
-    if (isActive !== undefined) {
-      whereCondition.isActive = isActive;
-    }
 
-    const supplierProducts = await prisma.supplierProduct.findMany({
-      where: whereCondition,
-      orderBy: { createdAt: "desc" },
-      include: {
-        supplier: {
-          select: {
-            id: true,
-            companyName: true,
-            contactName: true,
-            email: true,
-            phone: true,
-          }
-        },
-        Car: {
-          include: {
-            brandAndModels: {
-              include: {
-                BrandCars: true
-              }
-            },
-            colorCar: true,
-            typecar: true,
-            images: {
-              take: 1,
-            }
-          }
-        },
-      },
-    });
-
-    res.json({
-      message: "ຄົ້ນຫາການເຊື່ອມຕໍ່ສຳເລັດແລ້ວ",
-      data: supplierProducts
-    });
-
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({
-      message: "Server error searchSupplierProducts in controller!!!",
-    });
-  }
-};
 
 // ຟັງຊັນເປີດ/ປິດການເຊື່ອມຕໍ່
 exports.toggleSupplierProduct = async (req, res) => {
