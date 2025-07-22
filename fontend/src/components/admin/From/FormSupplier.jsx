@@ -24,7 +24,7 @@ const FormSupplier = () => {
                 <Car className="w-5 h-5 text-white" />
               </div>
               <h1 className="text-2xl font-bold text-gray-800 font-Sanslem">
-                ຈັດການແບນລົດ
+                ຈັດການຂໍ້ມູນຜູ້ສະໜອງ
               </h1>
             </div>
             <Link
@@ -36,7 +36,7 @@ const FormSupplier = () => {
             </Link>
           </div>
           <p className="text-gray-600 font-notosanslao">
-            ເພີ່ມແລະຈັດການແບນລົດໃນລະບົບ
+            ເພີ່ມແລະຈັດການຂໍ້ມູນຜູ້ສະໜອງໃນລະບົບ
           </p>
         </div>
 

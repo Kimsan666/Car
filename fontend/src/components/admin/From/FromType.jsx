@@ -40,7 +40,7 @@ const FromType = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen font-notosanslao bg-gray-50">
       <div className="container mx-auto px-4 py-6">
         {/* Header */}
         <div className="mb-8">
@@ -49,11 +49,11 @@ const FromType = () => {
               <Car className="w-5 h-5 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-gray-800 font-Sanslem">
-              ຈັດການປະເພດລົດ
+              ຈັດການຂໍ້ມູນປະເພດລົດ
             </h1>
           </div>
           <p className="text-gray-600 font-notosanslao">
-            ເພີ່ມແລະຈັດການປະເພດລົດໃນລະບົບ
+            ເພີ່ມແລະຈັດການຂໍ້ມູນປະເພດລົດໃນລະບົບ
           </p>
         </div>
 

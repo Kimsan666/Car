@@ -521,10 +521,10 @@ const EditCar = () => {
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="Available">ວ່າງ</option>
+                  <option value="Available">ພ້ອມຂາຍ</option>
                   <option value="Sold">ຂາຍແລ້ວ</option>
                   <option value="Reserved">ຈອງແລ້ວ</option>
-                  <option value="Maintenance">ບຳລຸງຮັກສາ</option>
+          
                 </select>
               </div>
 

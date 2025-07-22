@@ -1,10 +1,9 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import useCarStore from "../../../Store/car-store";
 import { toast } from "react-toastify";
 import {
   ArrowLeft,
-  ChevronDown,
   Upload,
   X,
   Save,
@@ -19,12 +18,14 @@ import {
   CheckCircle,
 } from "lucide-react";
 import {
+  readCustomer,
+  updateCustomer,
   removeCarImageC,
-  saveCustomer,
   uploadCarImagedC,
 } from "../../../api/Customer";
 
-const CreateCustomer = () => {
+const EditCustomer = () => {
+  const { id } = useParams();
   const navigate = useNavigate();
   const token = useCarStore((state) => state.token);
 
@@ -41,6 +42,7 @@ const CreateCustomer = () => {
 
   const [imageUploading, setImageUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // Document types options
   const documentTypes = [
@@ -49,6 +51,35 @@ const CreateCustomer = () => {
     { value: "driving_license", label: "ໃບຂັບຂີ່ (Driving License)" },
     { value: "census", label: "ປຶ້ມສຳມະໂນຄົວ (Census)" },
   ];
+
+  useEffect(() => {
+    loadCustomerData();
+  }, []);
+
+  const loadCustomerData = async () => {
+    try {
+      setLoading(true);
+      const res = await readCustomer(token, id);
+      const customerData = res.data.data;
+
+      setForm({
+        fname: customerData.fname || "",
+        lname: customerData.lname || "",
+        email: customerData.email || "",
+        number: customerData.number || "",
+        address: customerData.address || "",
+        documentsType: customerData.documentsType || "",
+        numberDocuments: customerData.numberDocuments || "",
+        images: customerData.images || [],
+      });
+    } catch (err) {
+      console.log(err);
+      toast.error("ເກີດຂໍ້ຜິດພາດໃນການໂຫຼດຂໍ້ມູນ");
+      navigate("/admin/customers");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
     setForm({
@@ -238,18 +269,8 @@ const CreateCustomer = () => {
     }
   };
 
-  const resetForm = () => {
-    setForm({
-      fname: "",
-      lname: "",
-      number: "",
-      email: "",
-      address: "",
-      numberDocuments: "",
-      documentsType: "",
-      images: [],
-    });
-    setUploadProgress([]);
+  const resetForm = async () => {
+    await loadCustomerData(); // Reload original data
   };
 
   const handleSubmit = async () => {
@@ -293,8 +314,9 @@ const CreateCustomer = () => {
     }
 
     try {
-      const res = await saveCustomer(token, form);
-      toast.success(res.data.message);
+      // Use updateCustomer API instead of saveCustomer
+      const res = await updateCustomer(token, id, form);
+      toast.success(res.data.message || "ອັບເດດຂໍ້ມູນລູກຄ້າສຳເລັດແລ້ວ");
       navigate("/admin/customers");
     } catch (err) {
       console.log(err);
@@ -302,6 +324,19 @@ const CreateCustomer = () => {
       toast.error(errorMsg);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto p-4 font-['Noto_Sans_Lao']">
+        <div className="bg-white rounded-lg shadow-md">
+          <div className="p-6 flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            <span className="ml-3">ກຳລັງໂຫຼດຂໍ້ມູນ...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-4 font-['Noto_Sans_Lao']">
@@ -315,7 +350,7 @@ const CreateCustomer = () => {
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
-            <h1 className="text-2xl font-bold text-gray-800">ເພີ່ມລູກຄ້າໃໝ່</h1>
+            <h1 className="text-2xl font-bold text-gray-800">ແກ້ໄຂຂໍ້ມູນລູກຄ້າ</h1>
           </div>
         </div>
 
@@ -611,7 +646,7 @@ const CreateCustomer = () => {
                 className="flex items-center space-x-2 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white px-8 py-3 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
               >
                 <RotateCcw className="h-4 w-4" />
-                <span>ລ້າງຟອມ</span>
+                <span>ໂຫຼດຄືນ</span>
               </button>
               <button
                 type="button"
@@ -633,7 +668,7 @@ const CreateCustomer = () => {
                       ກຳລັງອັບໂຫຼດ...
                     </>
                   ) : (
-                    "ບັນທຶກລູກຄ້າໃໝ່"
+                    "ອັບເດດຂໍ້ມູນ"
                   )}
                 </span>
               </button>
@@ -645,4 +680,4 @@ const CreateCustomer = () => {
   );
 };
 
-export default CreateCustomer;
+export default EditCustomer;

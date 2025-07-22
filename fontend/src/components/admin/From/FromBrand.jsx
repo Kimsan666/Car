@@ -49,11 +49,11 @@ const FormBrand = () => {
               <Car className="w-5 h-5 text-white" />
             </div>
             <h1 className="text-2xl font-bold font-notosanslao text-gray-800 font-Sanslem">
-              ຈັດການແບນລົດ
+              ຈັດການຂໍ້ມູນແບນລົດ
             </h1>
           </div>
           <p className="text-gray-600 font-notosanslao">
-            ເພີ່ມແລະຈັດການແບນລົດໃນລະບົບ
+            ເພີ່ມແລະຈັດການຂໍ້ມູນແບນລົດໃນລະບົບ
           </p>
         </div>
 

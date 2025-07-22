@@ -97,47 +97,7 @@ exports.savePurchase = async (req, res) => {
           })),
         },
       },
-      include: {
-        supplier: {
-          select: {
-            id: true,
-            companyName: true,
-            contactName: true,
-            email: true,
-            phone: true,
-          },
-        },
-        orderdBy: {
-          select: {
-            id: true,
-            username: true,
-            employee: {
-              select: {
-                firstName: true,
-                lastName: true,
-              },
-            },
-          },
-        },
-        products: {
-          include: {
-            Car: {
-              include: {
-                brandAndModels: {
-                  include: {
-                    BrandCars: true,
-                  },
-                },
-                colorCar: true,
-                typecar: true,
-                images: {
-                  take: 1,
-                },
-              },
-            },
-          },
-        },
-      },
+      
     });
 
     res.status(201).json({
@@ -475,10 +435,7 @@ exports.removePurchase = async (req, res) => {
     // ກວດສອບວ່າໃບສັ່ງຊື້ມີຢູ່ຫຼືບໍ່
     const existingPurchase = await prisma.purchase.findUnique({
       where: { id: Number(id) },
-      include: {
-        products: true,
-        InputCar: true,
-      },
+      
     });
 
     if (!existingPurchase) {
@@ -691,23 +648,7 @@ exports.updatePurchaseStatus = async (req, res) => {
         status: status,
         updatedAt: new Date(),
       },
-      include: {
-        supplier: {
-          select: {
-            companyName: true,
-          },
-        },
-        products: {
-          include: {
-            Car: {
-              select: {
-                name: true,
-                licensePlate: true,
-              },
-            },
-          },
-        },
-      },
+      
     });
 
     res.json({

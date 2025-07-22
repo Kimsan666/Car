@@ -17,6 +17,7 @@ import {
   CircleUserRound,
   SquareUser,
   ShoppingBag,
+  Car,
 } from "lucide-react";
 
 const MenuAdminDropdown = [
@@ -25,6 +26,7 @@ const MenuAdminDropdown = [
     icon: <PackageSearch />,
     sub: [
       { name: "ລົດ", icon: <PackageSearch />, path: "/admin/cars" },
+      { name: "ສະຕອກລົດ", icon: <Car />, path: "/admin/salecars" },
       { name: "ແບນ", icon: <Boxes />, path: "/admin/brands" },
       { name: "ສີ", icon: <Combine />, path: "/admin/colors" },
       { name: "ປະເພດ", icon: <Container />, path: "/admin/types" },

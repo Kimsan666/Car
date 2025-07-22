@@ -68,7 +68,7 @@ export const removeCarImageC = async (token, public_id) =>
   );
 
 export const uploadCarImagedC = async (token, imageData) =>
-  await axios.post(`${API_URL}/imaged`, imageData, {
+  await axios.post(`${API_URL}/images`, imageData, {
     headers: {
       Authorization: `Bearer ${token}`,
     },

@@ -1,6 +1,5 @@
 import React from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import Home from "../page/user/Home";
 import Login from "../page/auth/Login";
 import Dashboard from "../page/admin/Dashboard";
 import Layoutuser from "../layouts/Layoutuser";
@@ -37,7 +36,13 @@ import CreateActualCars from "../components/admin/InputCar/CreateActualCars";
 import ListInputCars from "../components/admin/InputCar/ListInputCar";
 import FormSupplierProduct from "../components/admin/From/FormSupplierProduct";
 import TableSupplierProduct from "../components/admin/Table/TableSupplierProduct";
-
+import EditCustomer from "../components/admin/Edit/EditCustomer";
+import CreateSaleCar from "../components/admin/Create/CreateSaleCar";
+import FormSaleCar from "../components/admin/From/FormSaleCar";
+import CarShop from "../page/user/CarShop";
+import EditSaleCar from "../components/admin/Edit/EditSaleCar";
+// ເພີ່ມ Checkout page
+import Checkout from "../page/user/Checkout";
 
 const AppRouter = () => {
   const router = createBrowserRouter([
@@ -48,7 +53,11 @@ const AppRouter = () => {
     {
       path: "/user",
       element: <ProtectRouUser element={<Layoutuser />} />,
-      children: [{ index: true, element: <FormCardCar /> }],
+      children: [
+        { index: true, element: <CarShop /> },
+        // ເພີ່ມ Checkout route ແຍກ
+        { path: "checkout", element: <Checkout /> }
+      ],
     },
     {
       path: "/admin",
@@ -71,22 +80,19 @@ const AppRouter = () => {
         { path: "suppliers/create", element: <CreateSupplier /> },
         { path: "edit-suppliers/:id", element: <EditSupplier /> },
         { path: "customers", element: <FormCustomer /> },
-        { path: "customers/create", element: <FormCustomer /> },
+        { path: "edit-customers/:id", element: <EditCustomer /> },
+        { path: "customers/create", element: <CreateCustomer /> },
         { path: "purchase/create", element: <CreatePurchase /> },
-        { path: "purchases", element: <ListPurchase /> },
         { path: "edit-purchases/:id", element: <EditPurchase /> },
+        { path: "purchases", element: <ListPurchase /> },
+        { path: "supplier-products", element: <FormSupplierProduct /> },
         { path: "supplier-products/create", element: <CreateSupplierProduct /> },
-        { path: "supplier-products", element: <TableSupplierProduct /> },
-
         { path: "input-cars", element: <ListInputCars /> },
         { path: "input-cars/create", element: <CreateInputCar /> },
         { path: "input-cars/create-actual", element: <CreateActualCars /> },
-
-
-
-
-
-
+        { path: "salecar/create", element: <CreateSaleCar /> },
+        { path: "salecars", element: <FormSaleCar /> },
+        { path: "edit-salecar/:id", element: <EditSaleCar /> },
         { path: "report-car", element: <ReportCar /> },
       ],
     },

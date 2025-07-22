@@ -1,6 +1,6 @@
 const express = require("express");
 const { authCheck, adminCheck } = require("../middleware/auth");
-const { saveCustomer, listCustomers, listCustomersEnabled, readCustomer, updateCustomer, removeCustomer, UploadImaged, RemoveImage } = require("../controllters/Customer");
+const { saveCustomer, listCustomers, listCustomersEnabled, readCustomer, updateCustomer, removeCustomer, RemoveImage, UploadImages } = require("../controllters/Customer");
 
 const router = express.Router();
 
@@ -14,6 +14,6 @@ router.delete("/customer/:id", authCheck, adminCheck, removeCustomer);
 
 // router.post("/images", authCheck, adminCheck, UploadImages);
 router.post("/removeimage", authCheck, adminCheck, RemoveImage);
-router.post("/imaged", authCheck, adminCheck, UploadImaged);
+router.post("/images", authCheck, adminCheck, UploadImages);
 
 module.exports = router;

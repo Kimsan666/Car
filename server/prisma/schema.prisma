@@ -105,7 +105,6 @@ model Car {
   itemonPurches    ItemOnPurchase[]
   brandCars        BrandCars?        @relation(fields: [brandCarsId], references: [id])
   brandCarsId      Int?
-  ItemOnOrder      ItemOnOrder[]
   ItemOnIputCar    ItemOnIputCar[]
   saleCar          saleCar[]
 }
@@ -132,15 +131,15 @@ model saleCar {
 }
 
 model Cart {
-  id          Int           @id @default(autoincrement())
-  orderdBy    User          @relation(fields: [orderdById], references: [id])
+  id          Int          @id @default(autoincrement())
+  orderdBy    User         @relation(fields: [orderdById], references: [id])
   orderdById  Int
-  customer    Customer?     @relation(fields: [customerId], references: [id])
+  customer    Customer?    @relation(fields: [customerId], references: [id])
   customerId  Int?
   totalAmount Float
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @default(now()) @updatedAt
-  ItemOnOrder ItemOnOrder[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @default(now()) @updatedAt
+  ItemOnCart  ItemOnCart[]
 }
 
 // แก้ไข ItemOnOrder model เพื่อเพิ่ม orderId และ quantity
@@ -154,6 +153,8 @@ model ItemOnCart {
   updatedAt DateTime @default(now()) @updatedAt
   saleCar   saleCar? @relation(fields: [saleCarId], references: [id])
   saleCarId Int?
+  Cart      Cart?    @relation(fields: [cartId], references: [id])
+  cartId    Int?
 }
 
 model Order {
@@ -180,10 +181,6 @@ model ItemOnOrder {
   updatedAt DateTime @default(now()) @updatedAt
   saleCar   saleCar? @relation(fields: [saleCarId], references: [id])
   saleCarId Int?
-  Car       Car?     @relation(fields: [carId], references: [id])
-  carId     Int?
-  Cart      Cart?    @relation(fields: [cartId], references: [id])
-  cartId    Int?
 }
 
 model ColorCar {
@@ -294,9 +291,9 @@ model ItemOnIputCar {
   id               Int       @id @default(autoincrement())
   InputCar         InputCar? @relation(fields: [inputCarId], references: [id], onDelete: Cascade)
   inputCarId       Int?
-  quantity         Int // ຈຳນວນທີ່ຄາດວ່າຈະໄດ້ຮັບ
+  quantity         Int
   car              Car?      @relation(fields: [carId], references: [id])
-  carId            Int? // ລົດທີ່ສັ່ງ (ຄາດການ)
+  carId            Int?
   receivedQuantity Int? // ຈຳນວນທີ່ໄດ້ຮັບຈິງ
 
   // ລາຍລະອຽດລົດທີ່ນຳເຂົ້າຈິງ (ສຳລັບບັນທຶກປະຫວັດ)

@@ -2,35 +2,29 @@ import React, { useState, useEffect } from "react";
 import {
   ArrowLeft,
   Save,
-  Plus,
-  X,
-  Upload,
+  Copy,
   Car,
   Package,
   AlertCircle,
-  Camera,
-  Trash2,
-  Copy,
   CheckCircle,
 } from "lucide-react";
 import useCarStore from "../../../Store/car-store";
 import { toast } from "react-toastify";
-import { saveInputCar, receiveActualCars } from "../../../api/InputCar";
 import { useNavigate } from "react-router-dom";
 
 const CreateActualCars = () => {
   const { 
     user, 
-    token, 
-    brands, 
     colors, 
     types, 
     brandAndModels,
-    getBrand,
     getColor,
     getType,
     getBrandAndModel,
+    createInputCar,
+    receiveActualCars,
   } = useCarStore();
+  
   const navigate = useNavigate();
 
   const [inputCarData, setInputCarData] = useState(null);
@@ -40,10 +34,23 @@ const CreateActualCars = () => {
   const [errors, setErrors] = useState({});
 
   // Safe arrays
-  const safeBrands = Array.isArray(brands?.data) ? brands.data : Array.isArray(brands) ? brands : [];
-  const safeColors = Array.isArray(colors?.data) ? colors.data : Array.isArray(colors) ? colors : [];
-  const safeTypes = Array.isArray(types?.data) ? types.data : Array.isArray(types) ? types : [];
-  const safeBrandAndModels = Array.isArray(brandAndModels?.data) ? brandAndModels.data : Array.isArray(brandAndModels) ? brandAndModels : [];
+  const safeColors = React.useMemo(() => {
+    if (Array.isArray(colors?.data)) return colors.data;
+    if (Array.isArray(colors)) return colors;
+    return [];
+  }, [colors]);
+
+  const safeTypes = React.useMemo(() => {
+    if (Array.isArray(types?.data)) return types.data;
+    if (Array.isArray(types)) return types;
+    return [];
+  }, [types]);
+
+  const safeBrandAndModels = React.useMemo(() => {
+    if (Array.isArray(brandAndModels?.data)) return brandAndModels.data;
+    if (Array.isArray(brandAndModels)) return brandAndModels;
+    return [];
+  }, [brandAndModels]);
 
   useEffect(() => {
     loadDataAndInitialize();
@@ -51,6 +58,8 @@ const CreateActualCars = () => {
 
   const loadDataAndInitialize = async () => {
     try {
+      setLoading(true);
+      
       // โหลดข้อมูลจาก localStorage
       const savedData = localStorage.getItem("inputCarData");
       if (!savedData) {
@@ -61,30 +70,38 @@ const CreateActualCars = () => {
 
       const data = JSON.parse(savedData);
       setInputCarData(data);
-      console.log("Input car data:", data);
 
-      // โหลดข้อมูล master data
-      await Promise.all([
-        safeBrands.length === 0 ? getBrand() : Promise.resolve(),
-        safeColors.length === 0 ? getColor() : Promise.resolve(),
-        safeTypes.length === 0 ? getType() : Promise.resolve(),
-        safeBrandAndModels.length === 0 ? getBrandAndModel() : Promise.resolve(),
-      ]);
+      // ตรวจสอบข้อมูลที่จำเป็น
+      if (!data.receivedItems || !Array.isArray(data.receivedItems) || data.receivedItems.length === 0) {
+        toast.error("ບໍ່ພົບຂໍ້ມູນລາຍການສິນຄ້າທີ່ໄດ້ຮັບ");
+        navigate("/admin/input-cars/create");
+        return;
+      }
 
-      // สร้างโครงสร้างข้อมูลรถจริงตามจำนวนที่ได้รับ
+      // โหลด master data
+      const promises = [];
+      if (safeColors.length === 0) promises.push(getColor());
+      if (safeTypes.length === 0) promises.push(getType());
+      if (safeBrandAndModels.length === 0) promises.push(getBrandAndModel());
+
+      if (promises.length > 0) {
+        await Promise.allSettled(promises);
+      }
+
+      // สร้างข้อมูลรถจริง
       const carsData = [];
+      let globalIndex = 0;
+
       data.receivedItems.forEach((item) => {
         for (let i = 0; i < item.receivedQuantity; i++) {
           carsData.push({
-            itemId: item.originalItemId,
-            carIndex: i,
+            // IDs สำหรับ mapping
+            globalIndex: globalIndex++,
             originalCarId: item.carId,
-            originalCarName: item.carName,
-            originalLicensePlate: item.licensePlate,
-            originalBrandModel: item.brandModel,
+            originalCarName: item.carName || "",
             
-            // ข้อมูลรถจริง
-            name: item.carName, // เริ่มต้นด้วยชื่อเดิม
+            // ข้อมูลรถจริงที่จำเป็นตาม schema
+            name: item.carName || "",
             licensePlate: "",
             actualPrice: "",
             actualCostPrice: "",
@@ -92,20 +109,22 @@ const CreateActualCars = () => {
             actualVin: "",
             actualEngineNumber: "",
             actualDescription: "",
+            
+            // Foreign keys ตาม schema
             brandAndModelsId: "",
             colorCarId: "",
             typeId: "",
-            brandCarsId: "",
+            
+            // ข้อมูลเพิ่มเติมสำหรับ display
             actualColorName: "",
             actualBrandModel: "",
             actualTypeName: "",
-            images: [],
-            imaged: [],
           });
         }
       });
 
       setActualCarsData(carsData);
+
     } catch (error) {
       console.error("Error loading data:", error);
       toast.error("ເກີດຂໍ້ຜິດພາດໃນການໂຫຼດຂໍ້ມູນ");
@@ -116,32 +135,30 @@ const CreateActualCars = () => {
   };
 
   // อัปเดตข้อมูลรถ
-  const updateCarData = (carIndex, field, value) => {
-    setActualCarsData(prev => prev.map((car, index) => {
-      if (index === carIndex) {
+  const updateCarData = (globalIndex, field, value) => {
+    setActualCarsData(prev => prev.map((car) => {
+      if (car.globalIndex === globalIndex) {
         const updatedCar = { ...car, [field]: value };
         
-        // ถ้าเป็นการเปลี่ยน brandAndModelsId ให้อัปเดต actualBrandModel
-        if (field === "brandAndModelsId") {
-          const selectedBrandModel = safeBrandAndModels.find(bm => bm.id === parseInt(value));
-          if (selectedBrandModel) {
-            updatedCar.actualBrandModel = `${selectedBrandModel.BrandCars?.name || ""} ${selectedBrandModel.modelCar || ""}`;
+        // อัปเดตข้อมูลที่เกี่ยวข้องเมื่อเปลี่ยน dropdown
+        if (field === "brandAndModelsId" && value) {
+          const selected = safeBrandAndModels.find(bm => bm.id === parseInt(value));
+          if (selected) {
+            updatedCar.actualBrandModel = `${selected.BrandCars?.name || ""} ${selected.modelCar || ""}`.trim();
           }
         }
         
-        // ถ้าเป็นการเปลี่ยน colorCarId ให้อัปเดต actualColorName
-        if (field === "colorCarId") {
-          const selectedColor = safeColors.find(c => c.id === parseInt(value));
-          if (selectedColor) {
-            updatedCar.actualColorName = selectedColor.name;
+        if (field === "colorCarId" && value) {
+          const selected = safeColors.find(c => c.id === parseInt(value));
+          if (selected) {
+            updatedCar.actualColorName = selected.name;
           }
         }
         
-        // ถ้าเป็นการเปลี่ยน typeId ให้อัปเดต actualTypeName
-        if (field === "typeId") {
-          const selectedType = safeTypes.find(t => t.id === parseInt(value));
-          if (selectedType) {
-            updatedCar.actualTypeName = selectedType.name;
+        if (field === "typeId" && value) {
+          const selected = safeTypes.find(t => t.id === parseInt(value));
+          if (selected) {
+            updatedCar.actualTypeName = selected.name;
           }
         }
         
@@ -150,11 +167,12 @@ const CreateActualCars = () => {
       return car;
     }));
 
-    // ล้าง error ของฟิลด์นี้
-    if (errors[`car_${carIndex}_${field}`]) {
+    // ล้าง error
+    const errorKey = `car_${globalIndex}_${field}`;
+    if (errors[errorKey]) {
       setErrors(prev => {
         const newErrors = { ...prev };
-        delete newErrors[`car_${carIndex}_${field}`];
+        delete newErrors[errorKey];
         return newErrors;
       });
     }
@@ -165,11 +183,9 @@ const CreateActualCars = () => {
     if (actualCarsData.length === 0) return;
     
     const firstCar = actualCarsData[0];
-    const targetCar = actualCarsData[targetIndex];
     
-    // คัดลอกข้อมูลยกเว้นข้อมูลที่ไม่ควรซ้ำ
-    setActualCarsData(prev => prev.map((car, index) => {
-      if (index === targetIndex) {
+    setActualCarsData(prev => prev.map((car) => {
+      if (car.globalIndex === targetIndex) {
         return {
           ...car,
           actualPrice: firstCar.actualPrice,
@@ -179,11 +195,9 @@ const CreateActualCars = () => {
           brandAndModelsId: firstCar.brandAndModelsId,
           colorCarId: firstCar.colorCarId,
           typeId: firstCar.typeId,
-          brandCarsId: firstCar.brandCarsId,
           actualColorName: firstCar.actualColorName,
           actualBrandModel: firstCar.actualBrandModel,
           actualTypeName: firstCar.actualTypeName,
-          // ไม่คัดลอก: name, licensePlate, actualVin, actualEngineNumber, images
         };
       }
       return car;
@@ -192,42 +206,81 @@ const CreateActualCars = () => {
     toast.success("ຄັດລອກຂໍ້ມູນສຳເລັດແລ້ວ");
   };
 
-  // ตรวจสอบความถูกต้องของข้อมูล
+  // ตรวจสอบความถูกต้อง
   const validateForm = () => {
     const newErrors = {};
     let isValid = true;
 
-    actualCarsData.forEach((car, index) => {
+    if (actualCarsData.length === 0) {
+      toast.error("ບໍ່ມີຂໍ້ມູນລົດທີ່ຈະບັນທຶກ");
+      return false;
+    }
+
+    actualCarsData.forEach((car) => {
+      const prefix = `car_${car.globalIndex}`;
+      
       if (!car.name?.trim()) {
-        newErrors[`car_${index}_name`] = "ກະລຸນາປ້ອນຊື່ລົດ";
+        newErrors[`${prefix}_name`] = "ກະລຸນາປ້ອນຊື່ລົດ";
         isValid = false;
       }
       
       if (!car.licensePlate?.trim()) {
-        newErrors[`car_${index}_licensePlate`] = "ກະລຸນາປ້ອນປ້າຍທະບຽນ";
+        newErrors[`${prefix}_licensePlate`] = "ກະລຸນາປ້ອນປ້າຍທະບຽນ";
         isValid = false;
       }
       
       if (!car.actualPrice || parseFloat(car.actualPrice) <= 0) {
-        newErrors[`car_${index}_actualPrice`] = "ກະລຸນາປ້ອນລາຄາຂາຍ";
+        newErrors[`${prefix}_actualPrice`] = "ກະລຸນາປ້ອນລາຄາຂາຍ";
         isValid = false;
       }
       
       if (!car.actualCostPrice || parseFloat(car.actualCostPrice) <= 0) {
-        newErrors[`car_${index}_actualCostPrice`] = "ກະລຸນາປ້ອນລາຄາຕົ້ນທຶນ";
+        newErrors[`${prefix}_actualCostPrice`] = "ກະລຸນາປ້ອນລາຄາຕົ້ນທຶນ";
+        isValid = false;
+      }
+
+      // ตรวจสอบราคา
+      if (car.actualPrice && car.actualCostPrice && 
+          parseFloat(car.actualCostPrice) > parseFloat(car.actualPrice)) {
+        newErrors[`${prefix}_actualCostPrice`] = "ລາຄາຕົ້ນທຶນບໍ່ຄວນເກີນລາຄາຂາຍ";
         isValid = false;
       }
     });
 
     // ตรวจสอบป้ายทะเบียนซ้ำ
-    const licensePlates = actualCarsData.map(car => car.licensePlate?.trim()).filter(Boolean);
-    const duplicatePlates = licensePlates.filter((plate, index) => licensePlates.indexOf(plate) !== index);
+    const licensePlates = actualCarsData
+      .map(car => car.licensePlate?.trim())
+      .filter(Boolean);
     
-    if (duplicatePlates.length > 0) {
-      duplicatePlates.forEach(plate => {
-        actualCarsData.forEach((car, index) => {
+    const duplicates = licensePlates.filter((plate, index) => 
+      licensePlates.indexOf(plate) !== index
+    );
+    
+    if (duplicates.length > 0) {
+      [...new Set(duplicates)].forEach(plate => {
+        actualCarsData.forEach((car) => {
           if (car.licensePlate?.trim() === plate) {
-            newErrors[`car_${index}_licensePlate`] = "ປ້າຍທະບຽນຊ້ຳກັນ";
+            newErrors[`car_${car.globalIndex}_licensePlate`] = "ປ້າຍທະບຽນຊ້ຳ";
+          }
+        });
+      });
+      isValid = false;
+    }
+
+    // ตรวจสอบ VIN ซ้ำ
+    const vins = actualCarsData
+      .map(car => car.actualVin?.trim())
+      .filter(Boolean);
+    
+    const duplicateVins = vins.filter((vin, index) => 
+      vins.indexOf(vin) !== index
+    );
+    
+    if (duplicateVins.length > 0) {
+      [...new Set(duplicateVins)].forEach(vin => {
+        actualCarsData.forEach((car) => {
+          if (car.actualVin?.trim() === vin) {
+            newErrors[`car_${car.globalIndex}_actualVin`] = "VIN ຊ້ຳ";
           }
         });
       });
@@ -245,143 +298,104 @@ const CreateActualCars = () => {
       return;
     }
 
+    if (!inputCarData || !user?.id) {
+      toast.error("ຂໍ້ມູນບໍ່ຄົບຖ້ວນ");
+      return;
+    }
+
     try {
       setIsSubmitting(true);
 
-      // เตรียมข้อมูลสำหรับ API
+      // Step 1: สร้าง InputCar
       const inputCarPayload = {
         supplierId: inputCarData.supplierId ? parseInt(inputCarData.supplierId) : null,
         expectedDeliveryDate: inputCarData.expectedDeliveryDate || null,
-        orderdById: user?.id,
-        purchaseIds: inputCarData.selectedPurchases.map(p => p.id),
-        products: inputCarData.receivedItems.map(item => ({
+        orderdById: user.id,
+        purchaseIds: (inputCarData.selectedPurchases || []).map(p => p.id),
+        products: (inputCarData.receivedItems || []).map(item => ({
           carId: item.carId,
           quantity: item.receivedQuantity,
         })),
       };
 
-      console.log("Creating InputCar with:", inputCarPayload);
-
-      // สร้าง InputCar ก่อน (ใช้ API functions)
-      const inputCarResult = await saveInputCar(token, inputCarPayload);
+      const inputCarResult = await createInputCar(inputCarPayload);
       
-      // Fixed: ใช้ response structure ที่ถูกต้อง
-      const inputCarId = inputCarResult.data.data?.id || inputCarResult.data.id;
-
-      console.log("InputCar created:", inputCarResult);
-      console.log("InputCar ID:", inputCarId);
-      console.log("InputCar data structure:", inputCarResult.data);
-
-      if (!inputCarId) {
-        throw new Error("ບໍ່ສາມາດສ້າງລາຍການນຳເຂົ້າໄດ້ - ບໍ່ພົບ ID");
+      // ดึง ID และ products ที่สร้าง
+      let inputCarId, createdItems = [];
+      
+      if (inputCarResult?.data?.data) {
+        inputCarId = inputCarResult.data.data.id;
+        createdItems = inputCarResult.data.data.products || [];
+      } else if (inputCarResult?.data) {
+        inputCarId = inputCarResult.data.id;
+        createdItems = inputCarResult.data.products || [];
       }
 
-      // ແຍກຂໍ້ມູນລົດຕາມ carId ເດີມ (ບໍ່ແມ່ນ itemId)
-      const groupedByOriginalCarId = {};
-      actualCarsData.forEach((car, index) => {
-        console.log(`Processing car ${index}:`, car);
-        
+      if (!inputCarId || !createdItems.length) {
+        throw new Error("ບໍ່ສາມາດສ້າງລາຍການນຳເຂົ້າໄດ້");
+      }
+
+      // Step 2: จัดกลุ่มรถตาม originalCarId
+      const groupedCars = {};
+      actualCarsData.forEach((car) => {
         const key = car.originalCarId;
-        if (!groupedByOriginalCarId[key]) {
-          groupedByOriginalCarId[key] = [];
+        if (!groupedCars[key]) {
+          groupedCars[key] = [];
         }
-        groupedByOriginalCarId[key].push(car);
+        groupedCars[key].push(car);
       });
 
-      console.log("Grouped cars by originalCarId:", groupedByOriginalCarId);
-
-      // ເຕຣຽມຂໍ້ມູນສຳລັບ receiveActualCars
+      // Step 3: เตรียมข้อมูลสำหรับ receiveActualCars
       const receivedItems = [];
       
-      // ຫາ ItemOnInputCar ທີ່ສ້າງໃໝ່ຈາກ response
-      const createdItems = inputCarResult.data.data?.products || inputCarResult.data.products || [];
-      console.log("Created items from InputCar:", createdItems);
-
-      // ສຳລັບແຕ່ລະ CarId ທີ່ມີໃນ response
       createdItems.forEach(createdItem => {
-        console.log("Processing created item:", createdItem);
-        
-        // ຫາລົດທີ່ຕົງກັນຈາກ groupedByOriginalCarId
-        const carsForThisItem = groupedByOriginalCarId[createdItem.carId];
+        const carsForThisItem = groupedCars[createdItem.carId];
         
         if (carsForThisItem && carsForThisItem.length > 0) {
-          console.log(`Found ${carsForThisItem.length} cars for carId ${createdItem.carId}`);
-          
-          // ກວດສອບຂໍ້ມູນທີ່ຈຳເປັນ
+          // กรองรถที่มีข้อมูลครบ
           const validCars = carsForThisItem.filter(car => 
             car.name?.trim() && 
             car.licensePlate?.trim() && 
             car.actualPrice && 
-            car.actualCostPrice
+            car.actualCostPrice &&
+            parseFloat(car.actualPrice) > 0 &&
+            parseFloat(car.actualCostPrice) > 0
           );
 
-          if (validCars.length === 0) {
-            console.warn(`No valid cars found for carId ${createdItem.carId}`);
-            return;
+          if (validCars.length > 0) {
+            receivedItems.push({
+              itemId: createdItem.id,
+              receivedQuantity: validCars.length,
+              actualCars: validCars.map(car => ({
+                name: car.name.trim(),
+                licensePlate: car.licensePlate.trim(),
+                actualPrice: parseFloat(car.actualPrice),
+                actualCostPrice: parseFloat(car.actualCostPrice),
+                actualYear: car.actualYear ? parseInt(car.actualYear) : null,
+                actualVin: car.actualVin?.trim() || null,
+                actualEngineNumber: car.actualEngineNumber?.trim() || null,
+                actualDescription: car.actualDescription?.trim() || null,
+                brandAndModelsId: car.brandAndModelsId ? parseInt(car.brandAndModelsId) : null,
+                colorCarId: car.colorCarId ? parseInt(car.colorCarId) : null,
+                typeId: car.typeId ? parseInt(car.typeId) : null,
+                actualColorName: car.actualColorName || null,
+                actualBrandModel: car.actualBrandModel || null,
+                actualTypeName: car.actualTypeName || null,
+              })),
+              notes: `ລາຍການນຳເຂົ້າ ${validCars.length} ຄັນ`,
+            });
           }
-
-          receivedItems.push({
-            itemId: createdItem.id, // ໃຊ້ ID ຂອງ ItemOnInputCar ທີ່ສ້າງໃໝ່
-            receivedQuantity: validCars.length,
-            actualCars: validCars.map(car => ({
-              name: car.name.trim(),
-              licensePlate: car.licensePlate.trim(),
-              actualPrice: parseFloat(car.actualPrice),
-              actualCostPrice: parseFloat(car.actualCostPrice),
-              actualYear: car.actualYear ? parseInt(car.actualYear) : null,
-              actualVin: car.actualVin?.trim() || null,
-              actualEngineNumber: car.actualEngineNumber?.trim() || null,
-              actualDescription: car.actualDescription?.trim() || null,
-              brandAndModelsId: car.brandAndModelsId ? parseInt(car.brandAndModelsId) : null,
-              colorCarId: car.colorCarId ? parseInt(car.colorCarId) : null,
-              typeId: car.typeId ? parseInt(car.typeId) : null,
-              brandCarsId: car.brandCarsId ? parseInt(car.brandCarsId) : null,
-              actualColorName: car.actualColorName || null,
-              actualBrandModel: car.actualBrandModel || null,
-              actualTypeName: car.actualTypeName || null,
-              images: car.images || [],
-              imaged: car.imaged || [],
-            })),
-            notes: `ລາຍການນຳເຂົ້າ ${validCars.length} ຄັນ`,
-          });
-        } else {
-          console.warn(`No cars found for carId ${createdItem.carId}`);
         }
       });
 
-      console.log("Final receivedItems:", receivedItems);
-
-      // ກວດສອບວ່າມີຂໍ້ມູນສົ່ງຫຼືບໍ່
       if (receivedItems.length === 0) {
-        throw new Error("ບໍ່ມີຂໍ້ມູນລົດທີ່ຖືກຕ້ອງສຳລັບການບັນທຶກ");
+        throw new Error("ບໍ່ມີຂໍ້ມູນລົດທີ່ຖືກຕ້ອງ");
       }
 
-      // ກວດສອບຂໍ້ມູນກ່ອນສົ່ງ
-      const isValidReceiveData = receivedItems.every(item => 
-        item.itemId && 
-        item.receivedQuantity > 0 && 
-        item.actualCars && 
-        item.actualCars.length > 0 &&
-        item.actualCars.every(car => 
-          car.name && 
-          car.licensePlate && 
-          car.actualPrice > 0 && 
-          car.actualCostPrice > 0
-        )
-      );
+      // Step 4: บันทึกรถจริง
+      await receiveActualCars(inputCarId, { receivedItems });
 
-      if (!isValidReceiveData) {
-        throw new Error("ຂໍ້ມູນລົດບໍ່ຄົບຖ້ວນຫຼືບໍ່ຖືກຕ້ອງ");
-      }
-
-      console.log("Receiving actual cars with inputCarId:", inputCarId);
-      console.log("Sending payload:", JSON.stringify({ receivedItems }, null, 2));
-
-      // บันทึกรถจริง (ใช้ API functions)
-      const receiveResult = await receiveActualCars(token, inputCarId, { receivedItems });
-      console.log("Actual cars received:", receiveResult);
-
-      // ลบข้อมูลชั่วคราวใน localStorage
+      // ลบข้อมูลชั่วคราว
       localStorage.removeItem("inputCarData");
 
       toast.success(`ບັນທຶກລາຍການນຳເຂົ້າສຳເລັດແລ້ວ (${actualCarsData.length} ຄັນ)`);
@@ -389,13 +403,7 @@ const CreateActualCars = () => {
 
     } catch (error) {
       console.error("Error submitting:", error);
-      console.error("Error details:", {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-      });
-      
-      const errorMessage = error.response?.data?.message || error.message || "ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກ";
+      const errorMessage = error.response?.data?.message || error.message || "ເກີດຂໍ້ຜິດພາດ";
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -403,7 +411,7 @@ const CreateActualCars = () => {
   };
 
   const handleCancel = () => {
-    if (confirm("ທ່ານຕ້ອງການຍົກເລີກການສ້າງລາຍການນຳເຂົ້າບໍ? ຂໍ້ມູນທີ່ປ້ອນຈະຫາຍໄປ")) {
+    if (confirm("ທ່ານຕ້ອງການຍົກເລີກບໍ? ຂໍ້ມູນຈະຫາຍໄປ")) {
       localStorage.removeItem("inputCarData");
       navigate("/admin/input-cars");
     }
@@ -446,13 +454,13 @@ const CreateActualCars = () => {
     );
   }
 
-  // จัดกลุ่มรถตาม originalCarName
-  const groupedActualCars = actualCarsData.reduce((acc, car, index) => {
-    const key = car.originalCarName;
+  // จัดกลุ่มรถตามชื่อ
+  const groupedCars = actualCarsData.reduce((acc, car) => {
+    const key = car.originalCarName || `ລົດ ID: ${car.originalCarId}`;
     if (!acc[key]) {
       acc[key] = [];
     }
-    acc[key].push({ ...car, index });
+    acc[key].push(car);
     return acc;
   }, {});
 
@@ -464,7 +472,8 @@ const CreateActualCars = () => {
           <div className="flex items-center gap-4">
             <button
               onClick={handleBack}
-              className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+              disabled={isSubmitting}
+              className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
             >
               <ArrowLeft size={20} />
             </button>
@@ -489,11 +498,9 @@ const CreateActualCars = () => {
               <div className="flex items-center gap-2">
                 <Package className="text-blue-600" size={20} />
                 <div>
-                  <p className="text-sm text-blue-600 font-notosanslao">
-                    ໃບສັ່ງຊື້ທີ່ເລືອກ
-                  </p>
+                  <p className="text-sm text-blue-600 font-notosanslao">ໃບສັ່ງຊື້</p>
                   <p className="text-xl font-semibold font-notosanslao text-blue-900">
-                    {inputCarData.selectedPurchases.length} ໃບ
+                    {(inputCarData.selectedPurchases || []).length} ໃບ
                   </p>
                 </div>
               </div>
@@ -502,11 +509,9 @@ const CreateActualCars = () => {
               <div className="flex items-center gap-2">
                 <Car className="text-green-600" size={20} />
                 <div>
-                  <p className="text-sm text-green-600 font-notosanslao">
-                    ລາຍການສິນຄ້າ
-                  </p>
+                  <p className="text-sm text-green-600 font-notosanslao">ລາຍການສິນຄ້າ</p>
                   <p className="text-xl font-semibold font-notosanslao text-green-900">
-                    {inputCarData.receivedItems.length} ລາຍການ
+                    {(inputCarData.receivedItems || []).length} ລາຍການ
                   </p>
                 </div>
               </div>
@@ -515,9 +520,7 @@ const CreateActualCars = () => {
               <div className="flex items-center gap-2">
                 <CheckCircle className="text-purple-600" size={20} />
                 <div>
-                  <p className="text-sm text-purple-600 font-notosanslao">
-                    ລົດທີ່ຈະໄດ້ຮັບ
-                  </p>
+                  <p className="text-sm text-purple-600 font-notosanslao">ລົດທີ່ຈະບັນທຶກ</p>
                   <p className="text-xl font-semibold font-notosanslao text-purple-900">
                     {actualCarsData.length} ຄັນ
                   </p>
@@ -529,28 +532,26 @@ const CreateActualCars = () => {
 
         {/* Car Forms */}
         <div className="space-y-6">
-          {Object.entries(groupedActualCars).map(([carName, cars]) => (
+          {Object.entries(groupedCars).map(([carName, cars]) => (
             <div key={carName} className="bg-white rounded-lg shadow-sm">
               <div className="p-6 border-b border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900 font-notosanslao">
                   {carName} ({cars.length} ຄັນ)
                 </h3>
-                <p className="text-sm text-gray-600 font-notosanslao">
-                  ປ້ອນຂໍ້ມູນລົດຈິງທີ່ໄດ້ຮັບ
-                </p>
               </div>
 
               <div className="p-6 space-y-6">
-                {cars.map((car, carIndex) => (
-                  <div key={car.index} className="border border-gray-200 rounded-lg p-6">
+                {cars.map((car, index) => (
+                  <div key={car.globalIndex} className="border border-gray-200 rounded-lg p-6">
                     <div className="flex items-center justify-between mb-4">
                       <h4 className="text-md font-medium text-gray-900 font-notosanslao">
-                        ລົດຄັນທີ່ {carIndex + 1}
+                        ລົດຄັນທີ່ {index + 1}
                       </h4>
-                      {carIndex > 0 && (
+                      {index > 0 && (
                         <button
-                          onClick={() => copyFromFirstCar(car.index)}
-                          className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2 font-notosanslao"
+                          onClick={() => copyFromFirstCar(car.globalIndex)}
+                          disabled={isSubmitting}
+                          className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2 font-notosanslao disabled:opacity-50"
                         >
                           <Copy size={16} />
                           ຄັດລອກຈາກຄັນທີ 1
@@ -567,15 +568,16 @@ const CreateActualCars = () => {
                         <input
                           type="text"
                           value={car.name}
-                          onChange={(e) => updateCarData(car.index, "name", e.target.value)}
-                          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-notosanslao ${
-                            errors[`car_${car.index}_name`] ? "border-red-500" : "border-gray-300"
+                          onChange={(e) => updateCarData(car.globalIndex, "name", e.target.value)}
+                          disabled={isSubmitting}
+                          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-notosanslao disabled:bg-gray-100 ${
+                            errors[`car_${car.globalIndex}_name`] ? "border-red-500" : "border-gray-300"
                           }`}
                           placeholder="ປ້ອນຊື່ລົດ"
                         />
-                        {errors[`car_${car.index}_name`] && (
+                        {errors[`car_${car.globalIndex}_name`] && (
                           <p className="text-red-500 text-sm mt-1 font-notosanslao">
-                            {errors[`car_${car.index}_name`]}
+                            {errors[`car_${car.globalIndex}_name`]}
                           </p>
                         )}
                       </div>
@@ -588,15 +590,16 @@ const CreateActualCars = () => {
                         <input
                           type="text"
                           value={car.licensePlate}
-                          onChange={(e) => updateCarData(car.index, "licensePlate", e.target.value)}
-                          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-notosanslao ${
-                            errors[`car_${car.index}_licensePlate`] ? "border-red-500" : "border-gray-300"
+                          onChange={(e) => updateCarData(car.globalIndex, "licensePlate", e.target.value)}
+                          disabled={isSubmitting}
+                          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-notosanslao disabled:bg-gray-100 ${
+                            errors[`car_${car.globalIndex}_licensePlate`] ? "border-red-500" : "border-gray-300"
                           }`}
                           placeholder="ປ້ອນປ້າຍທະບຽນ"
                         />
-                        {errors[`car_${car.index}_licensePlate`] && (
+                        {errors[`car_${car.globalIndex}_licensePlate`] && (
                           <p className="text-red-500 text-sm mt-1 font-notosanslao">
-                            {errors[`car_${car.index}_licensePlate`]}
+                            {errors[`car_${car.globalIndex}_licensePlate`]}
                           </p>
                         )}
                       </div>
@@ -609,17 +612,18 @@ const CreateActualCars = () => {
                         <input
                           type="number"
                           value={car.actualPrice}
-                          onChange={(e) => updateCarData(car.index, "actualPrice", e.target.value)}
-                          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-notosanslao ${
-                            errors[`car_${car.index}_actualPrice`] ? "border-red-500" : "border-gray-300"
+                          onChange={(e) => updateCarData(car.globalIndex, "actualPrice", e.target.value)}
+                          disabled={isSubmitting}
+                          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-notosanslao disabled:bg-gray-100 ${
+                            errors[`car_${car.globalIndex}_actualPrice`] ? "border-red-500" : "border-gray-300"
                           }`}
                           placeholder="ປ້ອນລາຄາຂາຍ"
                           min="0"
                           step="1000"
                         />
-                        {errors[`car_${car.index}_actualPrice`] && (
+                        {errors[`car_${car.globalIndex}_actualPrice`] && (
                           <p className="text-red-500 text-sm mt-1 font-notosanslao">
-                            {errors[`car_${car.index}_actualPrice`]}
+                            {errors[`car_${car.globalIndex}_actualPrice`]}
                           </p>
                         )}
                       </div>
@@ -632,17 +636,18 @@ const CreateActualCars = () => {
                         <input
                           type="number"
                           value={car.actualCostPrice}
-                          onChange={(e) => updateCarData(car.index, "actualCostPrice", e.target.value)}
-                          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-notosanslao ${
-                            errors[`car_${car.index}_actualCostPrice`] ? "border-red-500" : "border-gray-300"
+                          onChange={(e) => updateCarData(car.globalIndex, "actualCostPrice", e.target.value)}
+                          disabled={isSubmitting}
+                          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-notosanslao disabled:bg-gray-100 ${
+                            errors[`car_${car.globalIndex}_actualCostPrice`] ? "border-red-500" : "border-gray-300"
                           }`}
                           placeholder="ປ້ອນລາຄາຕົ້ນທຶນ"
                           min="0"
                           step="1000"
                         />
-                        {errors[`car_${car.index}_actualCostPrice`] && (
+                        {errors[`car_${car.globalIndex}_actualCostPrice`] && (
                           <p className="text-red-500 text-sm mt-1 font-notosanslao">
-                            {errors[`car_${car.index}_actualCostPrice`]}
+                            {errors[`car_${car.globalIndex}_actualCostPrice`]}
                           </p>
                         )}
                       </div>
@@ -655,8 +660,9 @@ const CreateActualCars = () => {
                         <input
                           type="number"
                           value={car.actualYear}
-                          onChange={(e) => updateCarData(car.index, "actualYear", e.target.value)}
-                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-notosanslao"
+                          onChange={(e) => updateCarData(car.globalIndex, "actualYear", e.target.value)}
+                          disabled={isSubmitting}
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-notosanslao disabled:bg-gray-100"
                           placeholder="ປີຜະລິດ"
                           min="1900"
                           max={new Date().getFullYear() + 1}
@@ -670,8 +676,9 @@ const CreateActualCars = () => {
                         </label>
                         <select
                           value={car.brandAndModelsId}
-                          onChange={(e) => updateCarData(car.index, "brandAndModelsId", e.target.value)}
-                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-notosanslao"
+                          onChange={(e) => updateCarData(car.globalIndex, "brandAndModelsId", e.target.value)}
+                          disabled={isSubmitting}
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-notosanslao disabled:bg-gray-100"
                         >
                           <option value="">ເລືອກຍີ່ຫໍ້ແລະຮຸ່ນ</option>
                           {safeBrandAndModels.map((bm) => (
@@ -689,8 +696,9 @@ const CreateActualCars = () => {
                         </label>
                         <select
                           value={car.colorCarId}
-                          onChange={(e) => updateCarData(car.index, "colorCarId", e.target.value)}
-                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-notosanslao"
+                          onChange={(e) => updateCarData(car.globalIndex, "colorCarId", e.target.value)}
+                          disabled={isSubmitting}
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-notosanslao disabled:bg-gray-100"
                         >
                           <option value="">ເລືອກສີ</option>
                           {safeColors.map((color) => (
@@ -708,8 +716,9 @@ const CreateActualCars = () => {
                         </label>
                         <select
                           value={car.typeId}
-                          onChange={(e) => updateCarData(car.index, "typeId", e.target.value)}
-                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-notosanslao"
+                          onChange={(e) => updateCarData(car.globalIndex, "typeId", e.target.value)}
+                          disabled={isSubmitting}
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-notosanslao disabled:bg-gray-100"
                         >
                           <option value="">ເລືອກປະເພດລົດ</option>
                           {safeTypes.map((type) => (
@@ -728,10 +737,18 @@ const CreateActualCars = () => {
                         <input
                           type="text"
                           value={car.actualVin}
-                          onChange={(e) => updateCarData(car.index, "actualVin", e.target.value)}
-                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-notosanslao"
+                          onChange={(e) => updateCarData(car.globalIndex, "actualVin", e.target.value)}
+                          disabled={isSubmitting}
+                          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-notosanslao disabled:bg-gray-100 ${
+                            errors[`car_${car.globalIndex}_actualVin`] ? "border-red-500" : "border-gray-300"
+                          }`}
                           placeholder="ເລກ VIN"
                         />
+                        {errors[`car_${car.globalIndex}_actualVin`] && (
+                          <p className="text-red-500 text-sm mt-1 font-notosanslao">
+                            {errors[`car_${car.globalIndex}_actualVin`]}
+                          </p>
+                        )}
                       </div>
 
                       {/* ເລກເຄື່ອງຍົນ */}
@@ -742,8 +759,9 @@ const CreateActualCars = () => {
                         <input
                           type="text"
                           value={car.actualEngineNumber}
-                          onChange={(e) => updateCarData(car.index, "actualEngineNumber", e.target.value)}
-                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-notosanslao"
+                          onChange={(e) => updateCarData(car.globalIndex, "actualEngineNumber", e.target.value)}
+                          disabled={isSubmitting}
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-notosanslao disabled:bg-gray-100"
                           placeholder="ເລກເຄື່ອງຍົນ"
                         />
                       </div>
@@ -755,9 +773,10 @@ const CreateActualCars = () => {
                         </label>
                         <textarea
                           value={car.actualDescription}
-                          onChange={(e) => updateCarData(car.index, "actualDescription", e.target.value)}
+                          onChange={(e) => updateCarData(car.globalIndex, "actualDescription", e.target.value)}
+                          disabled={isSubmitting}
                           rows={3}
-                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-notosanslao"
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-notosanslao disabled:bg-gray-100"
                           placeholder="ລາຍລະອຽດເພີ່ມເຕີມ..."
                         />
                       </div>
@@ -774,15 +793,15 @@ const CreateActualCars = () => {
           <div className="flex justify-end gap-4">
             <button
               onClick={handleCancel}
-              className="px-6 py-3 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-notosanslao"
               disabled={isSubmitting}
+              className="px-6 py-3 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-notosanslao disabled:opacity-50"
             >
               ຍົກເລີກ
             </button>
             <button
               onClick={handleBack}
-              className="px-6 py-3 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-notosanslao"
               disabled={isSubmitting}
+              className="px-6 py-3 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-notosanslao disabled:opacity-50"
             >
               ກັບໄປ
             </button>
@@ -800,6 +819,23 @@ const CreateActualCars = () => {
             </button>
           </div>
         </div>
+
+        {/* Loading Overlay */}
+        {isSubmitting && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2 font-notosanslao">
+                  ກຳລັງບັນທຶກ...
+                </h3>
+                <p className="text-gray-600 font-notosanslao">
+                  ກະລຸນາລໍຖ້າ ກຳລັງສ້າງລາຍການນຳເຂົ້າແລະບັນທຶກຂໍ້ມູນລົດ
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

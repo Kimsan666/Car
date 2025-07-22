@@ -9,8 +9,9 @@ exports.saveInputCar = async (req, res) => {
       products, // array ຂອງ { carId, quantity }
       orderdById,
       purchaseIds, // array ຂອງ Purchase IDs ທີ່ກ່ຽວຂ້ອງ
-      actualCars // array ຂອງລົດຈິງທີ່ໄດ້ຮັບ (ມີເມື່ອ status = RECEIVED)
     } = req.body;
+
+    console.log("Creating InputCar with data:", JSON.stringify(req.body, null, 2));
 
     // ກວດສອບຂໍ້ມູນທີ່ຈຳເປັນ
     if (!orderdById) {
@@ -77,15 +78,16 @@ exports.saveInputCar = async (req, res) => {
     }
 
     // ກວດສອບ Purchase IDs (ຖ້າມີ)
+    let validPurchases = [];
     if (purchaseIds && Array.isArray(purchaseIds) && purchaseIds.length > 0) {
-      const purchases = await prisma.purchase.findMany({
+      validPurchases = await prisma.purchase.findMany({
         where: {
           id: { in: purchaseIds.map(id => parseInt(id)) },
           status: "CONFIRMED" // ໃບສັ່ງຊື້ຕ້ອງຢືນຢັນແລ້ວ
         }
       });
 
-      if (purchases.length !== purchaseIds.length) {
+      if (validPurchases.length !== purchaseIds.length) {
         return res.status(400).json({
           message: "ມີບາງໃບສັ່ງຊື້ທີ່ບໍ່ພົບຫຼືຍັງບໍ່ໄດ້ຢືນຢັນ"
         });
@@ -94,6 +96,8 @@ exports.saveInputCar = async (req, res) => {
 
     // ຄິດໄລ່ຈຳນວນທັງໝົດ
     const quantitytotal = products.reduce((sum, product) => sum + parseInt(product.quantity), 0);
+
+    console.log("Creating InputCar with quantitytotal:", quantitytotal);
 
     // ສ້າງ InputCar ພ້ອມ ItemOnIputCar
     const inputCar = await prisma.inputCar.create({
@@ -110,8 +114,8 @@ exports.saveInputCar = async (req, res) => {
           })),
         },
         // ເຊື່ອມຕໍ່ກັບ Purchase ຖ້າມີ
-        Purches: purchaseIds && purchaseIds.length > 0 ? {
-          connect: purchaseIds.map(id => ({ id: parseInt(id) }))
+        Purches: validPurchases.length > 0 ? {
+          connect: validPurchases.map(p => ({ id: p.id }))
         } : undefined,
       },
       include: {
@@ -164,15 +168,18 @@ exports.saveInputCar = async (req, res) => {
       },
     });
 
+    console.log("InputCar created successfully:", inputCar.id);
+
     res.status(201).json({
       message: "ສ້າງລາຍການນຳເຂົ້າສຳເລັດແລ້ວ",
       data: inputCar,
     });
 
   } catch (err) {
-    console.log(err);
+    console.error("Error in saveInputCar:", err);
     res.status(500).json({
       message: "Server error saveInputCar in controller!!!",
+      error: err.message,
     });
   }
 };
@@ -182,6 +189,9 @@ exports.receiveActualCars = async (req, res) => {
   try {
     const { id } = req.params;
     const { receivedItems } = req.body; // array ຂອງຂໍ້ມູນລົດຈິງ
+
+    console.log("Receiving actual cars for InputCar ID:", id);
+    console.log("Received data:", JSON.stringify(req.body, null, 2));
 
     // ກວດສອບວ່າລາຍການນຳເຂົ້າມີຢູ່ຫຼືບໍ່
     const inputCar = await prisma.inputCar.findUnique({
@@ -202,9 +212,9 @@ exports.receiveActualCars = async (req, res) => {
     }
 
     // ກວດສອບສະຖານະ
-    if (inputCar.status !== 'CONFIRMED') {
+    if (inputCar.status !== 'PENDING') {
       return res.status(400).json({
-        message: "ລາຍການນຳເຂົ້າຕ້ອງຢືນຢັນກ່ອນຈຶ່ງສາມາດບັນທຶກລົດຈິງໄດ້"
+        message: "ລາຍການນຳເຂົ້າຕ້ອງມີສະຖານະ PENDING ຈຶ່ງສາມາດບັນທຶກລົດຈິງໄດ້"
       });
     }
 
@@ -253,9 +263,9 @@ exports.receiveActualCars = async (req, res) => {
           });
         }
 
-        // ກວດສອບປ້າຍທະບຽນຊ້ຳ
-        const existingLicensePlate = await prisma.car.findUnique({
-          where: { licensePlate: car.licensePlate }
+        // ກວດສອບປ້າຍທະບຽນຊ້ຳ (ໃນ saleCar table)
+        const existingLicensePlate = await prisma.saleCar.findUnique({
+          where: { licensePlate: car.licensePlate.trim() }
         });
 
         if (existingLicensePlate) {
@@ -264,10 +274,10 @@ exports.receiveActualCars = async (req, res) => {
           });
         }
 
-        // ກວດສອບ VIN ຊ້ຳ (ຖ້າມີ)
+        // ກວດສອບ VIN ຊ້ຳ (ຖ້າມີ) ໃນ saleCar table
         if (car.actualVin) {
-          const existingVin = await prisma.car.findUnique({
-            where: { vin: car.actualVin }
+          const existingVin = await prisma.saleCar.findUnique({
+            where: { vin: car.actualVin.trim() }
           });
 
           if (existingVin) {
@@ -285,62 +295,45 @@ exports.receiveActualCars = async (req, res) => {
       const updatedItems = [];
 
       for (let item of receivedItems) {
-        // ສ້າງລົດຈິງແຕ່ລະຄັນ
+        // ຫາ Car ເດີມທີ່ສັ່ງ
+        const originalItem = inputCar.products.find(p => p.id === parseInt(item.itemId));
+        
+        // ສ້າງລົດຈິງແຕ່ລະຄັນໃນ saleCar table
         for (let carData of item.actualCars) {
-          const newCar = await prisma.car.create({
+          const newSaleCar = await prisma.saleCar.create({
             data: {
-              brandAndModelsId: carData.brandAndModelsId ? parseInt(carData.brandAndModelsId) : null,
               name: carData.name.trim(),
               licensePlate: carData.licensePlate.trim(),
               year: carData.actualYear ? parseInt(carData.actualYear) : null,
               colorCarId: carData.colorCarId ? parseInt(carData.colorCarId) : null,
               vin: carData.actualVin ? carData.actualVin.trim() : null,
               engineNumber: carData.actualEngineNumber ? carData.actualEngineNumber.trim() : null,
-              typeId: carData.typeId ? parseInt(carData.typeId) : null,
               status: "Available",
               price: parseFloat(carData.actualPrice),
               costPrice: parseFloat(carData.actualCostPrice),
-              description: carData.actualDescription || null,
-              brandCarsId: carData.brandCarsId ? parseInt(carData.brandCarsId) : null,
-              // ບັນທຶກຮູບພາບຖ້າມີ
-              images: carData.images && carData.images.length > 0 ? {
-                create: carData.images.map((img) => ({
-                  asset_id: img.asset_id,
-                  public_id: img.public_id,
-                  url: img.url,
-                  secure_url: img.secure_url,
-                })),
-              } : undefined,
-              imaged: carData.imaged && carData.imaged.length > 0 ? {
-                create: carData.imaged.map((img) => ({
-                  asset_id: img.asset_id,
-                  public_id: img.public_id,
-                  url: img.url,
-                  secure_url: img.secure_url,
-                })),
-              } : undefined,
+              carId: originalItem.carId, // ເຊື່ອມຕໍ່ກັບ Car ເດີມທີ່ສັ່ງ
+              createdAt: new Date(),
+              updatedAt: new Date(),
             }
           });
 
-          createdCars.push(newCar);
+          createdCars.push(newSaleCar);
         }
 
         // ອັບເດດ ItemOnIputCar ດ້ວຍຂໍ້ມູນລົດຈິງ
-        const firstActualCar = createdCars[createdCars.length - item.actualCars.length]; // ລົດທຳອິດຂອງ item ນີ້
-        const firstCarData = item.actualCars[0]; // ຂໍ້ມູນລົດທຳອິດ
+        const firstCarData = item.actualCars[0]; // ຂໍ້ມູນລົດທຳອິດສຳລັບເກັບເປັນ reference
 
         const updatedItem = await prisma.itemOnIputCar.update({
           where: { id: parseInt(item.itemId) },
           data: {
             receivedQuantity: parseInt(item.receivedQuantity),
-            actualCarId: firstActualCar.id, // ເຊື່ອມກັບລົດທຳອິດ
-            actualVin: firstCarData.actualVin || null,
-            actualLicensePlate: firstCarData.licensePlate,
+            actualVin: firstCarData.actualVin?.trim() || null,
+            actualLicensePlate: firstCarData.licensePlate.trim(),
             actualYear: firstCarData.actualYear ? parseInt(firstCarData.actualYear) : null,
             actualPrice: parseFloat(firstCarData.actualPrice),
             actualCostPrice: parseFloat(firstCarData.actualCostPrice),
-            actualEngineNumber: firstCarData.actualEngineNumber || null,
-            actualDescription: firstCarData.actualDescription || null,
+            actualEngineNumber: firstCarData.actualEngineNumber?.trim() || null,
+            actualDescription: firstCarData.actualDescription?.trim() || null,
             actualColorName: firstCarData.actualColorName || null,
             actualBrandModel: firstCarData.actualBrandModel || null,
             actualTypeName: firstCarData.actualTypeName || null,
@@ -365,6 +358,8 @@ exports.receiveActualCars = async (req, res) => {
       return { createdCars, updatedItems, updatedInputCar };
     });
 
+    console.log(`Successfully created ${result.createdCars.length} cars and updated ${result.updatedItems.length} items`);
+
     res.json({
       message: `ບັນທຶກລົດຈິງສຳເລັດແລ້ວ (${result.createdCars.length} ຄັນ)`,
       data: {
@@ -379,9 +374,10 @@ exports.receiveActualCars = async (req, res) => {
     });
 
   } catch (err) {
-    console.log(err);
+    console.error("Error in receiveActualCars:", err);
     res.status(500).json({
       message: "Server error receiveActualCars in controller!!!",
+      error: err.message,
     });
   }
 };
@@ -389,7 +385,7 @@ exports.receiveActualCars = async (req, res) => {
 // ຟັງຊັນອ່ານລາຍການນຳເຂົ້າທັງໝົດ
 exports.listInputCars = async (req, res) => {
   try {
-    const { status, supplierId, orderdById } = req.query;
+    const { status, supplierId, orderdById, dateFrom, dateTo } = req.query;
     
     // ສ້າງເງື່ອນໄຂການຄົ້ນຫາ
     let whereCondition = {};
@@ -404,6 +400,17 @@ exports.listInputCars = async (req, res) => {
     
     if (orderdById) {
       whereCondition.orderdById = parseInt(orderdById);
+    }
+
+    // ກັ່ນຕອງຕາມວັນທີ
+    if (dateFrom || dateTo) {
+      whereCondition.createdAt = {};
+      if (dateFrom) {
+        whereCondition.createdAt.gte = new Date(dateFrom);
+      }
+      if (dateTo) {
+        whereCondition.createdAt.lte = new Date(dateTo);
+      }
     }
 
     const inputCars = await prisma.inputCar.findMany({
@@ -434,12 +441,14 @@ exports.listInputCars = async (req, res) => {
         products: {
           include: {
             Car: {
-              select: {
-                id: true,
-                name: true,
-                licensePlate: true,
-                price: true,
-                costPrice: true,
+              include: {
+                brandAndModels: {
+                  include: {
+                    BrandCars: true
+                  }
+                },
+                colorCar: true,
+                typecar: true,
               }
             }
           }
@@ -448,7 +457,7 @@ exports.listInputCars = async (req, res) => {
           select: {
             id: true,
             status: true,
-            quantitytotal: true,
+            createdAt: true,
           }
         },
         _count: {
@@ -465,9 +474,10 @@ exports.listInputCars = async (req, res) => {
       data: inputCars
     });
   } catch (err) {
-    console.log(err);
+    console.error("Error in listInputCars:", err);
     res.status(500).json({ 
-      message: "Server error listInputCars in controller!!!" 
+      message: "Server error listInputCars in controller!!!",
+      error: err.message,
     });
   }
 };
@@ -476,6 +486,12 @@ exports.listInputCars = async (req, res) => {
 exports.readInputCar = async (req, res) => {
   try {
     const { id } = req.params;
+    
+    if (!id || isNaN(Number(id))) {
+      return res.status(400).json({
+        message: "ກະລຸນາລະບຸ ID ທີ່ຖືກຕ້ອງ"
+      });
+    }
     
     const inputCar = await prisma.inputCar.findFirst({
       where: {
@@ -549,9 +565,10 @@ exports.readInputCar = async (req, res) => {
       data: inputCar
     });
   } catch (err) {
-    console.log(err);
+    console.error("Error in readInputCar:", err);
     res.status(500).json({ 
-      message: "Server error readInputCar in controller!!!" 
+      message: "Server error readInputCar in controller!!!",
+      error: err.message,
     });
   }
 };
@@ -566,6 +583,12 @@ exports.updateInputCar = async (req, res) => {
       supplierId,
       products
     } = req.body;
+
+    if (!id || isNaN(Number(id))) {
+      return res.status(400).json({
+        message: "ກະລຸນາລະບຸ ID ທີ່ຖືກຕ້ອງ"
+      });
+    }
 
     // ກວດສອບວ່າລາຍການນຳເຂົ້າມີຢູ່ຫຼືບໍ່
     const existingInputCar = await prisma.inputCar.findUnique({
@@ -699,9 +722,10 @@ exports.updateInputCar = async (req, res) => {
     });
 
   } catch (err) {
-    console.log(err);
+    console.error("Error in updateInputCar:", err);
     res.status(500).json({
       message: "Server error updateInputCar in controller!!!",
+      error: err.message,
     });
   }
 };
@@ -710,6 +734,12 @@ exports.updateInputCar = async (req, res) => {
 exports.removeInputCar = async (req, res) => {
   try {
     const { id } = req.params;
+
+    if (!id || isNaN(Number(id))) {
+      return res.status(400).json({
+        message: "ກະລຸນາລະບຸ ID ທີ່ຖືກຕ້ອງ"
+      });
+    }
 
     // ກວດສອບວ່າລາຍການນຳເຂົ້າມີຢູ່ຫຼືບໍ່
     const existingInputCar = await prisma.inputCar.findUnique({
@@ -748,9 +778,10 @@ exports.removeInputCar = async (req, res) => {
     });
 
   } catch (err) {
-    console.log(err);
+    console.error("Error in removeInputCar:", err);
     res.status(500).json({
       message: "Server error removeInputCar in controller!!!",
+      error: err.message,
     });
   }
 };
@@ -758,7 +789,7 @@ exports.removeInputCar = async (req, res) => {
 // ຟັງຊັນຄົ້ນຫາລາຍການນຳເຂົ້າ
 exports.searchInputCars = async (req, res) => {
   try {
-    const { query, status, supplierId, dateFrom, dateTo } = req.body;
+    const { query, status, supplierId, dateFrom, dateTo, orderdById } = req.body;
     
     let whereCondition = {};
     
@@ -769,6 +800,7 @@ exports.searchInputCars = async (req, res) => {
           supplier: {
             companyName: {
               contains: query.trim(),
+              mode: 'insensitive',
             },
           },
         },
@@ -776,6 +808,7 @@ exports.searchInputCars = async (req, res) => {
           orderdBy: {
             username: {
               contains: query.trim(),
+              mode: 'insensitive',
             },
           },
         },
@@ -784,6 +817,7 @@ exports.searchInputCars = async (req, res) => {
             employee: {
               firstName: {
                 contains: query.trim(),
+                mode: 'insensitive',
               },
             },
           },
@@ -794,6 +828,7 @@ exports.searchInputCars = async (req, res) => {
               Car: {
                 name: {
                   contains: query.trim(),
+                  mode: 'insensitive',
                 },
               },
             },
@@ -810,6 +845,11 @@ exports.searchInputCars = async (req, res) => {
     // ກັ່ນຕອງຕາມຜູ້ສະໜອງ
     if (supplierId) {
       whereCondition.supplierId = parseInt(supplierId);
+    }
+    
+    // ກັ່ນຕອງຕາມຜູ້ສ້າງ
+    if (orderdById) {
+      whereCondition.orderdById = parseInt(orderdById);
     }
     
     // ກັ່ນຕອງຕາມວັນທີ
@@ -873,9 +913,10 @@ exports.searchInputCars = async (req, res) => {
     });
 
   } catch (err) {
-    console.log(err);
+    console.error("Error in searchInputCars:", err);
     res.status(500).json({
       message: "Server error searchInputCars in controller!!!",
+      error: err.message,
     });
   }
 };
@@ -885,6 +926,12 @@ exports.updateInputCarStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
+
+    if (!id || isNaN(Number(id))) {
+      return res.status(400).json({
+        message: "ກະລຸນາລະບຸ ID ທີ່ຖືກຕ້ອງ"
+      });
+    }
 
     // ກວດສອບສະຖານະທີ່ອະນຸຍາດ
     const allowedStatuses = ['PENDING', 'CONFIRMED', 'RECEIVED', 'CANCELLED'];
@@ -958,9 +1005,10 @@ exports.updateInputCarStatus = async (req, res) => {
     });
 
   } catch (err) {
-    console.log(err);
+    console.error("Error in updateInputCarStatus:", err);
     res.status(500).json({
       message: "Server error updateInputCarStatus in controller!!!",
+      error: err.message,
     });
   }
 };

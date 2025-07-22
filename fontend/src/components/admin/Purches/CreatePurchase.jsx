@@ -15,6 +15,7 @@ import useCarStore from "../../../Store/car-store";
 import { toast } from "react-toastify";
 import { savePurchases } from "../../../api/Purchase";
 import { useNavigate } from "react-router-dom";
+import CustomNumberKeypad from "./CustomNumberKeypad"; // Import the CustomNumberKeypad
 
 const CreatePurchase = () => {
   const {
@@ -26,18 +27,39 @@ const CreatePurchase = () => {
     getSuppliersProduct,
   } = useCarStore();
   const navigate = useNavigate();
+  
   // Safe array conversion
   const safeSuppliers = Array.isArray(suppliers?.data)
     ? suppliers.data
     : Array.isArray(suppliers)
     ? suppliers
     : [];
-  const safeSupplierProducts = Array.isArray(suppliersproducts) ? suppliersproducts : [];
+  const safeSupplierProducts = Array.isArray(suppliersproducts)
+    ? suppliersproducts
+    : [];
 
   // Debug logging
   useEffect(() => {
-    console.log("safeSuppliers", safeSuppliers);
-    console.log("supplierproducts", suppliersproducts);
+    console.log("=== DEBUG DATA STRUCTURE ===");
+    console.log("safeSuppliers:", safeSuppliers);
+    console.log("supplierproducts:", suppliersproducts);
+    
+    // ກວດສອບໂຄງສ້າງຂອງ supplier products
+    if (safeSupplierProducts.length > 0) {
+      console.log("First supplier product structure:", safeSupplierProducts[0]);
+      console.log("First supplier product keys:", Object.keys(safeSupplierProducts[0]));
+      
+      // ກວດສອບວ່າມີຂໍ້ມູນ Car ຢູ່ບ່ອນໃດ
+      const firstSupplierProduct = safeSupplierProducts[0];
+      console.log("Car data in supplier product:", firstSupplierProduct.Car || firstSupplierProduct.car);
+      
+      // ກວດສອບທຸກ key ທີ່ເປັນໄປໄດ້
+      Object.keys(firstSupplierProduct).forEach(key => {
+        if (typeof firstSupplierProduct[key] === 'object' && firstSupplierProduct[key] !== null) {
+          console.log(`Key '${key}' contains:`, firstSupplierProduct[key]);
+        }
+      });
+    }
   }, [suppliers, suppliersproducts, safeSuppliers, safeSupplierProducts]);
 
   const [formData, setFormData] = useState({
@@ -52,6 +74,10 @@ const CreatePurchase = () => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
+
+  // State for CustomNumberKeypad
+  const [isKeypadOpen, setIsKeypadOpen] = useState(false);
+  const [selectedProductIndex, setSelectedProductIndex] = useState(null);
 
   useEffect(() => {
     loadInitialData();
@@ -71,7 +97,9 @@ const CreatePurchase = () => {
       // โหลดข้อมูลจาก API
       await Promise.all([
         safeSuppliers.length === 0 ? getSupplier() : Promise.resolve(),
-        safeSupplierProducts.length === 0 ? getSuppliersProduct() : Promise.resolve(),
+        safeSupplierProducts.length === 0
+          ? getSuppliersProduct()
+          : Promise.resolve(),
       ]);
     } catch (error) {
       console.error("Error loading initial data:", error);
@@ -93,56 +121,109 @@ const CreatePurchase = () => {
       setShowCarSearch(false);
       setSearchCar("");
       // ล้างสินค้าเก่าเมื่อเปลี่ยน supplier
-      setFormData(prev => ({ ...prev, products: [] }));
+      setFormData((prev) => ({ ...prev, products: [] }));
     }
   };
 
   const addCar = (supplierProduct) => {
-    const car = supplierProduct.Car; // ข้อมูลรถจาก supplier product
-    
-    // ตรวจสอบว่ามีรถคันนี้อยู่แล้วหรือไม่
+    // ກວດສອບວ່າ supplierProduct ມີຂໍ້ມູນ Car ຫຼືບໍ່
+    if (!supplierProduct || (!supplierProduct.Car && !supplierProduct.car)) {
+      console.error("ບໍ່ມີຂໍ້ມູນລົດໃນ supplier product:", supplierProduct);
+      toast.error("ບໍ່ສາມາດເພີ່ມລົດໄດ້: ຂໍ້ມູນລົດບໍ່ຄົບຖ້ວນ");
+      return;
+    }
+
+    // ສ້າງການ fallback ສຳລັບຂໍ້ມູນລົດ
+    const car = supplierProduct.Car || supplierProduct.car;
+
+    // ກວດສອບວ່າລົດມີ ID ຫຼືບໍ່
+    if (!car || !car.id) {
+      console.error("ລົດບໍ່ມີ ID:", car);
+      toast.error("ບໍ່ສາມາດເພີ່ມລົດໄດ້: ຂາດຂໍ້ມູນ ID ຂອງລົດ");
+      return;
+    }
+
+    // ຕຮວດສອບວ່າມີລົດຄັນນີ້ຢູ່ແລ້ວຫຼືບໍ່
     const existingCarIndex = formData.products.findIndex(
       (p) => p.carId === car.id
     );
 
+    console.log("existingCarIndex", existingCarIndex);
+    console.log("car data:", car);
+
     if (existingCarIndex !== -1) {
-      // ถ้ามีแล้ว เพิ่มจำนวน
+      // ຖ້າມີແລ້ວ ເພີ່ມຈຳນວນ
       const newProducts = [...formData.products];
       newProducts[existingCarIndex].quantity += 1;
       setFormData((prev) => ({ ...prev, products: newProducts }));
-      toast.info(`ເພີ່ມຈຳນວນ ${car.name} ແລ້ວ`);
+      
+      const carDisplayName = car.name || 
+        (car.brandAndModels ? `${car.brandAndModels.BrandCars?.name || ''} ${car.brandAndModels.modelCar || ''}`.trim() : '') ||
+        car.licensePlate ||
+        `ລົດລະຫັດ ${car.id}`;
+      
+      toast.info(`ເພີ່ມຈຳນວນ ${carDisplayName} ແລ້ວ`);
     } else {
-      // ถ้ายังไม่มี เพิ่มใหม่
+      // ຖ້າຍັງບໍ່ມີ ເພີ່ມໃໝ່
+      const brandModel = car.brandAndModels
+        ? `${car.brandAndModels.BrandCars?.name || ''} ${car.brandAndModels.modelCar || ''}`.trim()
+        : '';
+
+      const carDisplayName = car.name || brandModel || car.licensePlate || `ລົດລະຫັດ ${car.id}`;
+
       const newProduct = {
         carId: car.id,
         quantity: 1,
-        // ข้อมูลเพิ่มเติมสำหรับแสดงผล
-        carName: car.name,
-        licensePlate: car.licensePlate,
-        brandModel: car.brandAndModels
-          ? `${car.brandAndModels.BrandCars?.name} ${car.brandAndModels.modelCar}`
-          : "",
-        color: car.colorCar?.name || "",
-        type: car.typecar?.name || "",
-        year: car.year,
+        
+        // ຂໍ້ມູນສະແດງຜົນ
+        carName: carDisplayName,
+        licensePlate: car.licensePlate || '',
+        brandModel: brandModel,
+        type: car.typecar?.name || '',
+        color: car.colorCar?.name || '',
+        year: car.year || '',
+        vin: car.vin || '',
         price: car.price || 0,
-        costPrice: car.costPrice || 0,
-        vin: car.vin,
-        status: car.status,
-        // ข้อมูลจาก supplier product
+
+        // ຂໍ້ມູນຈາກ supplier product
         supplierProductId: supplierProduct.id,
-        supplierNotes: supplierProduct.notes,
-        isActive: supplierProduct.isActive,
+        supplierNotes: supplierProduct.notes || '',
+        isActive: supplierProduct.isActive !== false, // default to true if undefined
       };
 
       setFormData((prev) => ({
         ...prev,
         products: [...prev.products, newProduct],
       }));
+
+      toast.success(`ເພີ່ມ ${carDisplayName} ແລ້ວ`);
     }
 
     setShowCarSearch(false);
     setSearchCar("");
+  };
+
+  // Handle quantity click to open keypad
+  const handleQuantityClick = (productIndex) => {
+    setSelectedProductIndex(productIndex);
+    setIsKeypadOpen(true);
+  };
+
+  // Handle keypad confirmation
+  const handleQuantityConfirm = (newQuantity) => {
+    if (selectedProductIndex !== null) {
+      setFormData((prev) => ({
+        ...prev,
+        products: prev.products.map((product, index) =>
+          index === selectedProductIndex 
+            ? { ...product, quantity: newQuantity } 
+            : product
+        ),
+      }));
+      
+      const productName = formData.products[selectedProductIndex]?.carName || "ລົດ";
+      toast.success(`ອັບເດດຈຳນວນ ${productName} ເປັນ ${newQuantity} ຄັນແລ້ວ`);
+    }
   };
 
   const updateQuantity = (productIndex, newQuantity) => {
@@ -216,7 +297,7 @@ const CreatePurchase = () => {
       console.log("=== PURCHASE SUBMISSION DEBUG ===");
       console.log("Submit data:", submitData);
       console.log("User token:", token ? "✓ Present" : "✗ Missing");
-      
+
       // เรียก API ผ่าน axios (แก้ไขจากเดิมที่ใช้ fetch)
       const response = await savePurchases(token, submitData);
 
@@ -235,14 +316,14 @@ const CreatePurchase = () => {
       });
 
       // Navigate back ถ้ามี react-router
-      // navigate("/admin/purchase");
+      navigate("/admin/purchases");
     } catch (error) {
       console.error("=== ERROR SUBMITTING PURCHASE ===");
       console.error("Error details:", error);
-      
+
       // แสดง error message ที่เหมาะสม
       let errorMessage = "ເກີດຂໍ້ຜິດພາດໃນການສ້າງໃບສັ່ງຊື້";
-      
+
       // ตรวจสอบว่าเป็น axios error หรือไม่
       if (error.response) {
         // Server ตอบกลับมาแต่มี error status
@@ -250,12 +331,13 @@ const CreatePurchase = () => {
         errorMessage = error.response.data.message || errorMessage;
       } else if (error.request) {
         // Request ถูกส่งแต่ไม่ได้รับ response
-        errorMessage = "ບໍ່ສາມາດເຊື່ອມຕໍ່ກັບເຊີເວີໄດ້ ກະລຸນາກວດສອບວ່າ backend server ເປີດຢູ່ບໍ່";
+        errorMessage =
+          "ບໍ່ສາມາດເຊື່ອມຕໍ່ກັບເຊີເວີໄດ້ ກະລຸນາກວດສອບວ່າ backend server ເປີດຢູ່ບໍ່";
       } else {
         // Error อื่นๆ ในการตั้งค่า request
         errorMessage = error.message || errorMessage;
       }
-      
+
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -278,23 +360,48 @@ const CreatePurchase = () => {
   };
 
   // กรอง supplier products ตาม supplier ที่เลือก
-  const filteredSupplierProductsBySupplierId = formData.supplierId 
-    ? safeSupplierProducts.filter(sp => sp.supplierId === parseInt(formData.supplierId) && sp.isActive)
+  const filteredSupplierProductsBySupplierId = formData.supplierId
+    ? safeSupplierProducts.filter(
+        (sp) => sp.supplierId === parseInt(formData.supplierId) && sp.isActive !== false
+      )
     : [];
 
-  // กรองตามคำค้นหา
-  const filteredSupplierProducts = filteredSupplierProductsBySupplierId.filter((supplierProduct) => {
-    const car = supplierProduct.Car;
-    const searchTerm = searchCar.toLowerCase();
-    return (
-      car?.name?.toLowerCase().includes(searchTerm) ||
-      car?.licensePlate?.toLowerCase().includes(searchTerm) ||
-      car?.brandAndModels?.modelCar?.toLowerCase().includes(searchTerm) ||
-      car?.brandAndModels?.BrandCars?.name?.toLowerCase().includes(searchTerm) ||
-      car?.vin?.toLowerCase().includes(searchTerm) ||
-      supplierProduct.notes?.toLowerCase().includes(searchTerm)
-    );
-  });
+  // กรองตามคำค้นหา - ปรับปรุงให้รองรับโครงสร้างข้อมูลที่หลากหลาย
+  const filteredSupplierProducts = filteredSupplierProductsBySupplierId.filter(
+    (supplierProduct) => {
+      try {
+        // สร้างการ fallback สำหรับข้อมูลรถ
+        const car = supplierProduct.Car || supplierProduct.car || {};
+        
+        // ถ้าไม่มีข้อมูลรถ หรือ ไม่มี searchCar ให้แสดงทุกอัน
+        if (!car.id || !searchCar || searchCar.trim() === '') {
+          return !searchCar || searchCar.trim() === ''; // แสดงทุกอันถ้าไม่มีการค้นหา
+        }
+        
+        const searchTerm = searchCar.toLowerCase();
+        
+        // ค้นหาในฟิวที่ต่างๆ
+        const searchFields = [
+          car.name,
+          car.licensePlate,
+          car.brandAndModels?.modelCar,
+          car.brandAndModels?.BrandCars?.name,
+          car.vin,
+          car.colorCar?.name,
+          car.typecar?.name,
+          supplierProduct.notes,
+          car.status
+        ];
+        
+        return searchFields.some(field => 
+          field && field.toString().toLowerCase().includes(searchTerm)
+        );
+      } catch (error) {
+        console.error("Error filtering supplier product:", error, supplierProduct);
+        return false; // ถ้ามี error ก็ไม่แสดง
+      }
+    }
+  );
 
   const totalQuantity = formData.products.reduce(
     (sum, product) => sum + product.quantity,
@@ -323,8 +430,8 @@ const CreatePurchase = () => {
           <div className="flex items-center gap-4">
             <button
               onClick={() => {
-                  navigate("/admin/purchases");
-                }}
+                navigate("/admin/purchases");
+              }}
               className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <ArrowLeft size={20} />
@@ -449,9 +556,13 @@ const CreatePurchase = () => {
               <button
                 type="button"
                 onClick={() => setShowCarSearch(!showCarSearch)}
-                disabled={!formData.supplierId || filteredSupplierProductsBySupplierId.length === 0}
+                disabled={
+                  !formData.supplierId ||
+                  filteredSupplierProductsBySupplierId.length === 0
+                }
                 className={`px-4 py-2 rounded-lg font-notosanslao hover:bg-blue-700 flex items-center gap-2 transition-colors ${
-                  !formData.supplierId || filteredSupplierProductsBySupplierId.length === 0
+                  !formData.supplierId ||
+                  filteredSupplierProductsBySupplierId.length === 0
                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                     : "bg-blue-600 text-white"
                 }`}
@@ -482,114 +593,139 @@ const CreatePurchase = () => {
               </div>
             )}
 
-            {formData.supplierId && filteredSupplierProductsBySupplierId.length === 0 && (
-              <div className="mb-6 p-4 bg-yellow-50 border font-notosanslao border-yellow-200 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <AlertCircle className="text-yellow-600 w-5 h-5" />
-                  <div>
-                    <p className="text-yellow-800 font-medium">
-                      ຜູ້ສະໜອງນີ້ບໍ່ມີສິນຄ້າ
-                    </p>
-                    <p className="text-yellow-700 text-sm mt-1">
-                      ຜູ້ສະໜອງທີ່ເລືອກບໍ່ມີສິນຄ້າໃນລະບົບ ຫຼື ສິນຄ້າຖືກປິດການນຳໃຊ້
-                    </p>
+            {formData.supplierId &&
+              filteredSupplierProductsBySupplierId.length === 0 && (
+                <div className="mb-6 p-4 bg-yellow-50 border font-notosanslao border-yellow-200 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="text-yellow-600 w-5 h-5" />
+                    <div>
+                      <p className="text-yellow-800 font-medium">
+                        ຜູ້ສະໜອງນີ້ບໍ່ມີສິນຄ້າ
+                      </p>
+                      <p className="text-yellow-700 text-sm mt-1">
+                        ຜູ້ສະໜອງທີ່ເລືອກບໍ່ມີສິນຄ້າໃນລະບົບ ຫຼື
+                        ສິນຄ້າຖືກປິດການນຳໃຊ້
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* Car Search */}
-            {showCarSearch && formData.supplierId && filteredSupplierProductsBySupplierId.length > 0 && (
-              <div className="mb-6 p-4 border-2 border-dashed border-gray-300 rounded-lg">
-                <div className="flex items-center gap-2 mb-3">
-                  <Search size={20} className="text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="ຄົ້ນຫາລົດ (ຊື່, ປ້າຍທະບຽນ, ຍີ່ຫໍ້, VIN)"
-                    value={searchCar}
-                    onChange={(e) => setSearchCar(e.target.value)}
-                    className="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-notosanslao"
-                  />
-                </div>
-                <div className="max-h-64 overflow-y-auto">
-                  {filteredSupplierProducts.length > 0 ? (
-                    <div className="space-y-2">
-                      {filteredSupplierProducts.map((supplierProduct) => {
-                        const car = supplierProduct.Car;
-                        return (
-                          <div
-                            key={supplierProduct.id}
-                            className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                          >
-                            <div className="flex justify-between items-start">
-                              <div className="flex-1">
-                                <h4 className="font-medium text-gray-900">
-                                  {car?.name || "ບໍ່ມີຊື່"}
-                                </h4>
-                                <p className="text-sm text-gray-600 font-notosanslao">
-                                  ປ້າຍທະບຽນ: {car?.licensePlate || "-"}
-                                </p>
-                                <div className="flex gap-4 font-notosanslao text-xs text-gray-500 mt-1">
-                                  <span>
-                                    ຍີ່ຫໍ້: {car?.brandAndModels?.BrandCars?.name || "-"}
-                                  </span>
-                                  <span>
-                                    ຮຸ່ນ: {car?.brandAndModels?.modelCar || "-"}
-                                  </span>
-                                  <span>ສີ: {car?.colorCar?.name || "-"}</span>
-                                  <span>ປີ: {car?.year || "-"}</span>
-                                </div>
-                                <div className="flex gap-4 font-notosanslao text-xs text-blue-600 mt-1">
-                                  <span>ປະເພດ: {car?.typecar?.name || "-"}</span>
-                                  <span>ສະຖານະ: {car?.status || "-"}</span>
-                                  {car?.price && (
+            {showCarSearch &&
+              formData.supplierId &&
+              filteredSupplierProductsBySupplierId.length > 0 && (
+                <div className="mb-6 p-4 border-2 border-dashed border-gray-300 rounded-lg">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Search size={20} className="text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="ຄົ້ນຫາລົດ (ຊື່, ປ້າຍທະບຽນ, ຍີ່ຫໍ້, VIN)"
+                      value={searchCar}
+                      onChange={(e) => setSearchCar(e.target.value)}
+                      className="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-notosanslao"
+                    />
+                  </div>
+                  <div className="max-h-64 overflow-y-auto">
+                    {filteredSupplierProducts.length > 0 ? (
+                      <div className="space-y-2">
+                        {filteredSupplierProducts.map((supplierProduct) => {
+                          // สร้างการ fallback สำหรับข้อมูลรถ
+                          const car = supplierProduct.Car || supplierProduct.car || {};
+                          
+                          // กรองส่วนที่ไม่มีข้อมูลรถ
+                          if (!car.id && !car.name) {
+                            console.warn("Supplier product without valid car data:", supplierProduct);
+                            return null; // ไม่แสดงถ้าไม่มีข้อมูลรถ
+                          }
+
+                          const carDisplayName = car.name || 
+                            (car.brandAndModels ? `${car.brandAndModels.BrandCars?.name || ''} ${car.brandAndModels.modelCar || ''}`.trim() : '') ||
+                            car.licensePlate ||
+                            `ລົດລະຫັດ ${car.id}`;
+
+                          return (
+                            <div
+                              key={supplierProduct.id || `sp-${Math.random()}`}
+                              className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                            >
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <h4 className="font-medium text-gray-900">
+                                    {carDisplayName}
+                                  </h4>
+                                  <p className="text-sm text-gray-600 font-notosanslao">
+                                    ປ້າຍທະບຽນ: {car.licensePlate || "-"}
+                                  </p>
+                                  <div className="flex gap-4 font-notosanslao text-xs text-gray-500 mt-1">
                                     <span>
-                                      ລາຄາ: {car.price.toLocaleString()} ກີບ
+                                      ຍີ່ຫໍ້: {car.brandAndModels?.BrandCars?.name || "-"}
                                     </span>
+                                    <span>
+                                      ຮຸ່ນ: {car.brandAndModels?.modelCar || "-"}
+                                    </span>
+                                    <span>
+                                      ສີ: {car.colorCar?.name || "-"}
+                                    </span>
+                                    <span>ປີ: {car.year || "-"}</span>
+                                  </div>
+                                  <div className="flex gap-4 font-notosanslao text-xs text-blue-600 mt-1">
+                                    <span>
+                                      ປະເພດ: {car.typecar?.name || "-"}
+                                    </span>
+                                    <span>ສະຖານະ: {car.status || "-"}</span>
+                                    {car.price && (
+                                      <span>
+                                        ລາຄາ: {car.price.toLocaleString()} ກີບ
+                                      </span>
+                                    )}
+                                  </div>
+                                  {car.vin && (
+                                    <div className="text-xs text-gray-500 mt-1">
+                                      <span>VIN: {car.vin}</span>
+                                    </div>
+                                  )}
+                                  {supplierProduct.notes && (
+                                    <div className="text-xs text-green-600 mt-1 font-notosanslao">
+                                      <span>ໝາຍເຫດ: {supplierProduct.notes}</span>
+                                    </div>
+                                  )}
+                                  {supplierProduct.isActive === false && (
+                                    <div className="text-xs text-red-600 mt-1 font-notosanslao">
+                                      <span>⚠️ ສິນຄ້ານີ້ຖືກປິດການນຳໃຊ້</span>
+                                    </div>
                                   )}
                                 </div>
-                                {car?.vin && (
-                                  <div className="text-xs text-gray-500 mt-1">
-                                    <span>VIN: {car.vin}</span>
-                                  </div>
-                                )}
-                                {supplierProduct.notes && (
-                                  <div className="text-xs text-green-600 mt-1 font-notosanslao">
-                                    <span>ໝາຍເຫດ: {supplierProduct.notes}</span>
-                                  </div>
-                                )}
-                                {!supplierProduct.isActive && (
-                                  <div className="text-xs text-red-600 mt-1 font-notosanslao">
-                                    <span>⚠️ ສິນຄ້ານີ້ຖືກປິດການນຳໃຊ້</span>
-                                  </div>
-                                )}
+                                <button
+                                  onClick={() => {
+                                    console.log("Adding car, supplier product:", supplierProduct);
+                                    console.log("Car data:", car);
+                                    addCar(supplierProduct);
+                                  }}
+                                  disabled={supplierProduct.isActive === false}
+                                  className={`p-2 rounded-lg transition-colors ${
+                                    supplierProduct.isActive !== false
+                                      ? "text-blue-600 hover:bg-blue-50"
+                                      : "text-gray-400 cursor-not-allowed"
+                                  }`}
+                                >
+                                  <Plus size={24} />
+                                </button>
                               </div>
-                              <button
-                                onClick={() => addCar(supplierProduct)}
-                                disabled={!supplierProduct.isActive}
-                                className={`p-2 rounded-lg transition-colors ${
-                                  supplierProduct.isActive
-                                    ? "text-blue-600 hover:bg-blue-50"
-                                    : "text-gray-400 cursor-not-allowed"
-                                }`}
-                              >
-                                <Plus size={24} />
-                              </button>
                             </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="text-center font-notosanslao text-gray-500 py-8">
-                      {searchCar
-                        ? "ບໍ່ພົບສິນຄ້າທີ່ຄົ້ນຫາ"
-                        : "ກະລຸນາພິມເພື່ອຄົ້ນຫາສິນຄ້າ"}
-                    </div>
-                  )}
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-center font-notosanslao text-gray-500 py-8">
+                        {searchCar
+                          ? "ບໍ່ພົບສິນຄ້າທີ່ຄົ້ນຫາ"
+                          : "ກະລຸນາພິມເພື່ອຄົ້ນຫາສິນຄ້າ"}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* Selected Cars Table */}
             {formData.products.length > 0 && (
@@ -661,9 +797,15 @@ const CreatePurchase = () => {
                             >
                               <Minus size={16} />
                             </button>
-                            <span className="w-16 px-2 py-1 text-center font-medium bg-blue-50 text-blue-700 rounded border border-blue-200">
+                            {/* Clickable quantity display that opens keypad */}
+                            <button
+                              type="button"
+                              onClick={() => handleQuantityClick(index)}
+                              className="w-20 px-2 py-1 text-center font-medium bg-blue-50 text-blue-700 rounded border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer"
+                              title="ຄລິກເພື່ອປ້ອນຈຳນວນ"
+                            >
                               {product.quantity}
-                            </span>
+                            </button>
                             <button
                               type="button"
                               onClick={() =>
@@ -711,11 +853,10 @@ const CreatePurchase = () => {
                 <p className="text-lg font-notosanslao">ຍັງບໍ່ມີລົດໃນລາຍການ</p>
                 <p className="text-sm font-notosanslao">
                   {formData.supplierId
-                    ? filteredSupplierProductsBySupplierId.length > 0 
+                    ? filteredSupplierProductsBySupplierId.length > 0
                       ? 'ກົດປຸ່ມ "ເພີ່ມລົດ" ເພື່ອເລືອກລົດທີ່ຕ້ອງການສັ່ງຊື້'
                       : "ຜູ້ສະໜອງນີ້ບໍ່ມີສິນຄ້າໃນລະບົບ"
-                    : "ກະລຸນາເລືອກຜູ້ສະໜອງກ່ອນເພື່ອເລືອກສິນຄ້າ"
-                  }
+                    : "ກະລຸນາເລືອກຜູ້ສະໜອງກ່ອນເພື່ອເລືອກສິນຄ້າ"}
                 </p>
               </div>
             )}
@@ -803,6 +944,28 @@ const CreatePurchase = () => {
           </div>
         </div>
       </div>
+
+      {/* Custom Number Keypad Modal */}
+      <CustomNumberKeypad
+        isOpen={isKeypadOpen}
+        onClose={() => {
+          setIsKeypadOpen(false);
+          setSelectedProductIndex(null);
+        }}
+        onConfirm={handleQuantityConfirm}
+        initialValue={
+          selectedProductIndex !== null 
+            ? formData.products[selectedProductIndex]?.quantity || 1 
+            : 1
+        }
+        maxValue={9999}
+        title="ປ້ອນຈຳນວນລົດ"
+        subtitle={
+          selectedProductIndex !== null 
+            ? formData.products[selectedProductIndex]?.carName || ""
+            : ""
+        }
+      />
     </div>
   );
 };

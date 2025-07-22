@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { 
-  Plus, 
-  X, 
-  Save, 
-  ArrowLeft, 
-  Search, 
-  AlertCircle, 
-  Building, 
-  Car, 
+import {
+  Plus,
+  X,
+  Save,
+  ArrowLeft,
+  Search,
+  AlertCircle,
+  Building,
+  Car,
   CheckCircle,
-  Package
+  Package,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import useCarStore from "../../../Store/car-store";
@@ -41,15 +41,26 @@ const CreateSupplierProduct = () => {
   const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(false);
 
+  // Debug logs
+  console.log("Raw cars data:", cars);
+  console.log("Raw suppliers data:", suppliers);
+  console.log("Raw suppliersproducts data:", suppliersproducts);
+
   useEffect(() => {
     loadInitialData();
   }, []);
 
   useEffect(() => {
-    // ແກ້ໄຂການສະເເດງຂໍ້ມູນຈາກ store
-    const suppliersData = suppliers?.data || (Array.isArray(suppliers) ? suppliers : []);
-    const carsData = Array.isArray(cars) ? cars : [];
+    // แก้ไขการแสดงข้อมูลจาก store
+    const suppliersData = Array.isArray(suppliers) ? suppliers : 
+                         suppliers?.data ? suppliers.data : [];
     
+    const carsData = Array.isArray(cars) ? cars : 
+                    cars?.data ? cars.data : [];
+
+    console.log("Processed suppliers:", suppliersData);
+    console.log("Processed cars:", carsData);
+
     setAvailableSuppliers(suppliersData);
     setAvailableCars(carsData);
   }, [suppliers, cars]);
@@ -57,18 +68,17 @@ const CreateSupplierProduct = () => {
   const loadInitialData = async () => {
     try {
       setDataLoading(true);
-      
+
       await Promise.all([
         getSupplier(),
         getCar(),
-        getSuppliersProduct(), // ດຶງຂໍ້ມູນການເຊື່ອມຕໍ່ທີ່ມີຢູ່ແລ້ວ
+        getSuppliersProduct(), // ดึงข้อมูลการเชื่อมต่อที่มีอยู่แล้ว
       ]);
-
     } catch (error) {
       console.error("Error loading initial data:", error);
       toast.error("ບໍ່ສາມາດໂຫຼດຂໍ້ມູນໄດ້");
     } finally {
-      setTimeout(() => setDataLoading(false), 200);
+      setTimeout(() => setDataLoading(false), 500); // เพิ่มเวลาให้ข้อมูลโหลดเสร็จ
     }
   };
 
@@ -83,41 +93,45 @@ const CreateSupplierProduct = () => {
     if (name === "supplierId") {
       setShowCarSearch(false);
       setSearchCar("");
-      setFormData(prev => ({ ...prev, cars: [] }));
+      setFormData((prev) => ({ ...prev, cars: [] }));
     }
   };
 
   const addCar = (car) => {
-    // ຕ້ອງການ supplierId ກ່ອນ
+    // ต้องการ supplierId ก่อน
     if (!formData.supplierId) {
       toast.error("ກະລຸນາເລືອກຜູ້ສະໜອງກ່ອນ");
       return;
     }
 
-    // ຕາວສອບບໍ່ໃຫ້ເພີ່ມລົດຊ້ຳ
-    const isExist = formData.cars.some(c => c.carId === car.id);
+    // ตรวจสอบไม่ให้เพิ่มรถซ้ำ
+    const isExist = formData.cars.some((c) => c.carId === car.id);
     if (isExist) {
       toast.error("ລົດນີ້ຖືກເລືອກແລ້ວ");
       return;
     }
-console.log("sdwdsaaaaaaaaaaaaaa", car);
+    
+    // แก้ไขการเข้าถึงข้อมูลรถให้ถูกต้องตาม schema
     const newCar = {
       carId: car.id,
-      carName: car.name,
-      brandName: car.brandCars.name || "-",
-      modelName: car.brandAndModels?.modelCar || "-",
-      typeName: car.typecar?.name || "-",
+      brandName: car.brandCars?.name || "ບໍ່ລະບຸແບຣນ",
+      modelName: car.brandAndModels?.modelCar || "ບໍ່ລະບຸລຸ້ນ",
+      typeName: car.typecar?.name || "ບໍ່ລະບຸປະເພດ",
+      description: car.description || "",
       notes: "",
       isActive: true,
     };
 
-    setFormData((prev) => ({ 
-      ...prev, 
-      cars: [...prev.cars, newCar] 
+    console.log("Adding car:", newCar);
+
+    setFormData((prev) => ({
+      ...prev,
+      cars: [...prev.cars, newCar],
     }));
-    
+
     setShowCarSearch(false);
     setSearchCar("");
+    toast.success("ເພີ່ມລົດສຳເລັດ");
   };
 
   const updateCarField = (itemIndex, field, value) => {
@@ -130,11 +144,11 @@ console.log("sdwdsaaaaaaaaaaaaaa", car);
   };
 
   const updateCarStatus = (itemIndex, isActive) => {
-    updateCarField(itemIndex, 'isActive', isActive);
+    updateCarField(itemIndex, "isActive", isActive);
   };
 
   const updateCarNotes = (itemIndex, notes) => {
-    updateCarField(itemIndex, 'notes', notes);
+    updateCarField(itemIndex, "notes", notes);
   };
 
   const removeCar = (itemIndex) => {
@@ -142,19 +156,20 @@ console.log("sdwdsaaaaaaaaaaaaaa", car);
       ...prev,
       cars: prev.cars.filter((_, index) => index !== itemIndex),
     }));
+    toast.info("ລຶບລົດອອກຈາກລາຍການ");
   };
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.supplierId) {
       newErrors.supplierId = "ກະລຸນາເລືອກຜູ້ສະໜອງ";
     }
-    
+
     if (formData.cars.length === 0) {
       newErrors.cars = "ກະລຸນາເພີ່ມລົດຢ່າງນ້ອຍ 1 ຄັນ";
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -167,60 +182,81 @@ console.log("sdwdsaaaaaaaaaaaaaa", car);
 
     try {
       setLoading(true);
-      
-      // ສ້າງການເຊື່ອມຕໍ່ທີລະລາຍການ
-      const promises = formData.cars.map(car => 
-        saveSupplierProduct(token, {
-          supplierId: parseInt(formData.supplierId),
-          carId: car.carId,
-          notes: car.notes,
-          isActive: car.isActive,
-        })
-      );
-      
+
+      // สร้างการเชื่อมต่อทีละรายการ
+      const promises = formData.cars.map(async (car) => {
+        try {
+          const result = await saveSupplierProduct(token, {
+            supplierId: parseInt(formData.supplierId),
+            carId: car.carId,
+            notes: car.notes || "",
+            isActive: car.isActive,
+          });
+          console.log("Saved car connection:", result);
+          return result;
+        } catch (error) {
+          console.error("Error saving car connection:", error);
+          throw error;
+        }
+      });
+
       await Promise.all(promises);
-      
+
       toast.success(`ສ້າງການເຊື່ອມຕໍ່ສຳເລັດ ${formData.cars.length} ລາຍການ`);
+      
+      // รีเฟรชข้อมูล
+      await getSuppliersProduct();
+      
       navigate("/admin/supplier-products");
     } catch (error) {
       console.error("Error submitting supplier products:", error);
-      
+
       if (error.response?.data?.errors) {
         const errorMessages = error.response.data.errors.join(", ");
         toast.error(errorMessages);
+      } else if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
       } else {
-        toast.error(error.response?.data?.message || "ບໍ່ສາມາດບັນທຶກຂໍ້ມູນໄດ້");
+        toast.error("ບໍ່ສາມາດບັນທຶກຂໍ້ມູນໄດ້: " + error.message);
       }
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredCars = Array.isArray(availableCars) ? availableCars.filter((car) => {
-    const searchTerm = searchCar.toLowerCase();
-    
-    // ກວດສອບວ່າບໍ່ໄດ້ເລືອກໃນລາຍການປັດຈຸບັນ
-    const isNotSelectedInCurrentForm = !formData.cars.some(c => c.carId === car.id);
-    
-    // ກວດສອບວ່າບໍ່ໄດ້ມີການເຊື່ອມຕໍ່ກັບ supplier ທີ່ເລືອກແລ້ວ
-    const isNotLinkedToSupplier = !Array.isArray(suppliersproducts) || 
-      !suppliersproducts.some(sp => 
-        sp.supplierId === parseInt(formData.supplierId) && sp.carId === car.id
-      );
-    
-    // ກວດສອບການຄົ້ນຫາ
-    const matchesSearch = car.name?.toLowerCase().includes(searchTerm) ||
-                         car.licensePlate?.toLowerCase().includes(searchTerm) ||
-                         car.brandAndModels?.BrandCars?.name?.toLowerCase().includes(searchTerm) ||
-                         car.brandAndModels?.name?.toLowerCase().includes(searchTerm);
-    
-    return isNotSelectedInCurrentForm && isNotLinkedToSupplier && matchesSearch;
-  }) : [];
+  // แก้ไขการ filter รถ
+  const filteredCars = Array.isArray(availableCars)
+    ? availableCars.filter((car) => {
+        const searchTerm = searchCar.toLowerCase();
 
-  const selectedSupplier = Array.isArray(availableSuppliers) 
+        // ตรวจสอบว่าไม่ได้เลือกในรายการปัจจุบัน
+        const isNotSelectedInCurrentForm = !formData.cars.some(
+          (c) => c.carId === car.id
+        );
+
+        // ตรวจสอบว่าไม่ได้มีการเชื่อมต่อกับ supplier ที่เลือกแล้ว
+        const suppliersProductsArray = Array.isArray(suppliersproducts) ? suppliersproducts : [];
+        const isNotLinkedToSupplier = !suppliersProductsArray.some(
+          (sp) =>
+            sp.supplierId === parseInt(formData.supplierId) &&
+            sp.carId === car.id
+        );
+
+        // ตรวจสอบการค้นหา - แก้ไขการเข้าถึงข้อมูล
+        const matchesSearch = !searchTerm || 
+          car.brandCars?.name?.toLowerCase().includes(searchTerm) ||
+          car.brandAndModels?.modelCar?.toLowerCase().includes(searchTerm) ||
+          car.typecar?.name?.toLowerCase().includes(searchTerm) ||
+          car.description?.toLowerCase().includes(searchTerm);
+
+        return isNotSelectedInCurrentForm && isNotLinkedToSupplier && matchesSearch;
+      })
+    : [];
+
+  const selectedSupplier = Array.isArray(availableSuppliers)
     ? availableSuppliers.find((s) => s.id === parseInt(formData.supplierId))
     : null;
-  
+
   const isSupplierSelected = Boolean(formData.supplierId);
 
   if (dataLoading) {
@@ -247,8 +283,15 @@ console.log("sdwdsaaaaaaaaaaaaaa", car);
               <ArrowLeft size={20} />
             </button>
             <div className="font-notosanslao">
-              <h1 className="text-2xl font-bold text-gray-900">ເພີ່ມການເຊື່ອມຕໍ່ຜູ້ສະໜອງ-ລົດ</h1>
-              <p className="text-gray-600 mt-1">ສ້າງຄວາມສຳພັນລະຫວ່າງຜູ້ສະໜອງແລະລົດຫຼາຍລາຍການ</p>
+              <h1 className="text-2xl font-bold text-gray-900">
+                ເພີ່ມການເຊື່ອມຕໍ່ຜູ້ສະໜອງ-ລົດ
+              </h1>
+              <p className="text-gray-600 mt-1">
+                ສ້າງຄວາມສຳພັນລະຫວ່າງຜູ້ສະໜອງແລະລົດຫຼາຍລາຍການ
+              </p>
+              <div className="text-sm text-blue-600 mt-2">
+                📊 ສຖິຕິ: ຜູ້ສະໜອງ {availableSuppliers.length} ລາຍ, ລົດ {availableCars.length} ຄັນ
+              </div>
             </div>
           </div>
         </div>
@@ -274,26 +317,52 @@ console.log("sdwdsaaaaaaaaaaaaaa", car);
                   }`}
                 >
                   <option value="">ເລືອກຜູ້ສະໜອງ</option>
-                  {Array.isArray(availableSuppliers) && availableSuppliers.map((supplier) => (
+                  {availableSuppliers.map((supplier) => (
                     <option key={supplier.id} value={supplier.id}>
                       {supplier.companyName}
                       {supplier.contactName && ` - ${supplier.contactName}`}
                     </option>
                   ))}
                 </select>
-                {errors.supplierId && <p className="text-red-500 text-sm mt-1 font-notosanslao">{errors.supplierId}</p>}
+                {errors.supplierId && (
+                  <p className="text-red-500 text-sm mt-1 font-notosanslao">
+                    {errors.supplierId}
+                  </p>
+                )}
+                {availableSuppliers.length === 0 && (
+                  <p className="text-yellow-600 text-sm mt-1 font-notosanslao">
+                    ⚠️ ບໍ່ມີຜູ້ສະໜອງໃນລະບົບ
+                  </p>
+                )}
               </div>
             </div>
 
             {selectedSupplier && (
               <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                <h3 className="text-blue-900 mb-2 font-medium font-notosanslao">ຂໍ້ມູນຜູ້ສະໜອງ</h3>
+                <h3 className="text-blue-900 mb-2 font-medium font-notosanslao">
+                  ຂໍ້ມູນຜູ້ສະໜອງ
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-blue-800 font-notosanslao">
-                  <div><span className="font-medium">ບໍລິສັດ:</span> {selectedSupplier.companyName}</div>
-                  <div><span className="font-medium">ຜູ້ຕິດຕໍ່:</span> {selectedSupplier.contactName || "-"}</div>
-                  <div><span className="font-medium">ໂທລະສັບ:</span> {selectedSupplier.phone || "-"}</div>
-                  <div><span className="font-medium">ອີເມວ:</span> {selectedSupplier.email || "-"}</div>
-                  <div className="md:col-span-2"><span className="font-medium">ທີ່ຢູ່:</span> {selectedSupplier.address || "-"}</div>
+                  <div>
+                    <span className="font-medium">ບໍລິສັດ:</span>{" "}
+                    {selectedSupplier.companyName}
+                  </div>
+                  <div>
+                    <span className="font-medium">ຜູ້ຕິດຕໍ່:</span>{" "}
+                    {selectedSupplier.contactName || "-"}
+                  </div>
+                  <div>
+                    <span className="font-medium">ໂທລະສັບ:</span>{" "}
+                    {selectedSupplier.phone || "-"}
+                  </div>
+                  <div>
+                    <span className="font-medium">ອີເມວ:</span>{" "}
+                    {selectedSupplier.email || "-"}
+                  </div>
+                  <div className="md:col-span-2">
+                    <span className="font-medium">ທີ່ຢູ່:</span>{" "}
+                    {selectedSupplier.address || "-"}
+                  </div>
                 </div>
               </div>
             )}
@@ -316,19 +385,27 @@ console.log("sdwdsaaaaaaaaaaaaaa", car);
                 }`}
               >
                 <Plus size={20} />
-                ເພີ່ມລົດ
+                ເພີ່ມລົດ ({availableCars.length} ຄັນຍັງເຫຼືອ)
               </button>
             </div>
 
-            {errors.cars && <p className="text-red-500 text-sm mb-4 font-notosanslao">{errors.cars}</p>}
+            {errors.cars && (
+              <p className="text-red-500 text-sm mb-4 font-notosanslao">
+                {errors.cars}
+              </p>
+            )}
 
             {!isSupplierSelected && (
               <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <div className="flex items-center gap-2">
                   <AlertCircle className="text-yellow-600 w-5 h-5" />
                   <div className="font-notosanslao">
-                    <p className="text-yellow-800 font-medium">ກະລຸນາເລືອກຜູ້ສະໜອງກ່ອນເພີ່ມລົດ</p>
-                    <p className="text-yellow-700 text-sm mt-1">ທ່ານຕ້ອງເລືອກຜູ້ສະໜອງກ່ອນ ເພື່ອເພີ່ມລົດ</p>
+                    <p className="text-yellow-800 font-medium">
+                      ກະລຸນາເລືອກຜູ້ສະໜອງກ່ອນເພີ່ມລົດ
+                    </p>
+                    <p className="text-yellow-700 text-sm mt-1">
+                      ທ່ານຕ້ອງເລືອກຜູ້ສະໜອງກ່ອນ ເພື່ອເພີ່ມລົດ
+                    </p>
                   </div>
                 </div>
               </div>
@@ -341,20 +418,20 @@ console.log("sdwdsaaaaaaaaaaaaaa", car);
                   <Search size={20} className="text-gray-400" />
                   <input
                     type="text"
-                    placeholder="ຄົ້ນຫາລົດ (ຊື່, ປ້າຍທະບຽນ, ຍີ່ຫໍ້, ໂມເດນ)"
+                    placeholder="ຄົ້ນຫາລົດ (ແບຣນ, ລຸ້ນ, ປະເພດ, ລາຍລະອຽດ)"
                     value={searchCar}
                     onChange={(e) => setSearchCar(e.target.value)}
                     className="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-notosanslao"
                   />
                 </div>
-                
+
                 {/* Info about filtering */}
                 <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
                   <p className="text-sm text-blue-800 font-notosanslao">
                     📋 ຫມາຍເຫດ: ລົດທີ່ມີການເຊື່ອມຕໍ່ກັບຜູ້ສະໜອງນີ້ແລ້ວ ຈະບໍ່ສະແດງໃນລາຍການ
                   </p>
                 </div>
-                
+
                 <div className="max-h-64 overflow-y-auto">
                   {filteredCars.length > 0 ? (
                     <div className="space-y-2">
@@ -365,18 +442,20 @@ console.log("sdwdsaaaaaaaaaaaaaa", car);
                         >
                           <div className="flex justify-between items-start">
                             <div className="flex-1">
-                              <h4 className="font-medium text-gray-900 font-notosanslao">{car.name}</h4>
+                              <h4 className="font-medium text-gray-900 font-notosanslao">
+                                {car.brandCars?.name || "ບໍ່ລະບຸແບຣນ"} - {car.brandAndModels?.modelCar || "ບໍ່ລະບຸລຸ້ນ"}
+                              </h4>
                               <div className="flex gap-4 text-xs text-gray-500 mt-1 font-notosanslao">
-                                <span>ຍີ່ຫໍ້: {car.brandAndModels?.BrandCars?.name || "-"}</span>
-                                <span>ໂມເດນ: {car.brandAndModels?.name || "-"}</span>
-                               
+                                <span>ປະເພດ: {car.typecar?.name || "-"}</span>
+                                <span>ລາຍລະອຽດ: {car.description || "-"}</span>
                               </div>
                             </div>
                             <button
                               onClick={() => addCar(car)}
                               className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="ເພີ່ມລົດນີ້"
                             >
-                              <Plus size={24} />
+                              <Plus size={20} />
                             </button>
                           </div>
                         </div>
@@ -384,11 +463,24 @@ console.log("sdwdsaaaaaaaaaaaaaa", car);
                     </div>
                   ) : (
                     <div className="text-center text-gray-500 py-8 font-notosanslao">
-                      {searchCar
-                        ? "ບໍ່ພົບລົດທີ່ຄົ້ນຫາ ຫຼື ລົດທີ່ຄົ້ນຫາມີການເຊື່ອມຕໍ່ແລ້ວ"
-                        : availableCars.length === 0
-                        ? "ບໍ່ມີລົດໃນລະບົບ"
-                        : "ລົດທັງໝົດມີການເຊື່ອມຕໍ່ກັບຜູ້ສະໜອງນີ້ແລ້ວ ຫຼື ກະລຸນາພິມເພື່ອຄົ້ນຫາລົດ"}
+                      {searchCar ? (
+                        <div>
+                          <div className="text-4xl mb-2">🔍</div>
+                          <p>ບໍ່ພົບລົດທີ່ຄົ້ນຫາ "{searchCar}"</p>
+                          <p className="text-sm">ลองค้นหาด้วยคำอื่นหรือลົດທີ່ຄົ້ນຫາມີການເຊື່ອມຕໍ່ແລ້ວ</p>
+                        </div>
+                      ) : availableCars.length === 0 ? (
+                        <div>
+                          <div className="text-4xl mb-2">🚗</div>
+                          <p>ບໍ່ມີລົດໃນລະບົບ</p>
+                        </div>
+                      ) : (
+                        <div>
+                          <div className="text-4xl mb-2">✅</div>
+                          <p>ລົດທັງໝົດມີການເຊື່ອມຕໍ່ກັບຜູ້ສະໜອງນີ້ແລ້ວ</p>
+                          <p className="text-sm">ກະລຸນາພິມເພື່ອຄົ້ນຫາລົດ</p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -401,24 +493,43 @@ console.log("sdwdsaaaaaaaaaaaaaa", car);
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="bg-gray-50">
-                      <th className="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700 font-notosanslao">ລຳດັບ</th>
-                      <th className="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700 font-notosanslao">ຂໍ້ມູນລົດ</th>
-                      <th className="border border-gray-300 px-4 py-3 text-center text-sm font-medium text-gray-700 font-notosanslao">ສະຖານະ</th>
-                      <th className="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700 font-notosanslao">ໝາຍເຫດ</th>
-                      <th className="border border-gray-300 px-4 py-3 text-center text-sm font-medium text-gray-700 font-notosanslao">ຈັດການ</th>
+                      <th className="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700 font-notosanslao">
+                        ລຳດັບ
+                      </th>
+                      <th className="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700 font-notosanslao">
+                        ຂໍ້ມູນລົດ
+                      </th>
+                      <th className="border border-gray-300 px-4 py-3 text-center text-sm font-medium text-gray-700 font-notosanslao">
+                        ສະຖານະ
+                      </th>
+                      <th className="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700 font-notosanslao">
+                        ໝາຍເຫດ
+                      </th>
+                      <th className="border border-gray-300 px-4 py-3 text-center text-sm font-medium text-gray-700 font-notosanslao">
+                        ຈັດການ
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {formData.cars.map((car, index) => (
-                      <tr key={`${car.carId}-${index}`} className="hover:bg-gray-50">
-                        <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900 font-notosanslao">{index + 1}</td>
+                      <tr
+                        key={`${car.carId}-${index}`}
+                        className="hover:bg-gray-50"
+                      >
+                        <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900 font-notosanslao">
+                          {index + 1}
+                        </td>
                         <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">
                           <div className="font-notosanslao">
-                            <div className="font-medium">{car.carName}</div>
-                          
-                            <div className="text-xs text-gray-500">
-                              {car.brandName} - {car.modelName} | ປະເພດ: {car.typeName}{console.log("sdadw",car)}
+                            <div className="font-medium">{car.brandName} - {car.modelName}</div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              ປະເພດ: {car.typeName}
                             </div>
+                            {car.description && (
+                              <div className="text-xs text-gray-500">
+                                {car.description}
+                              </div>
+                            )}
                           </div>
                         </td>
                         <td className="border border-gray-300 px-4 py-3 text-center">
@@ -456,6 +567,7 @@ console.log("sdwdsaaaaaaaaaaaaaa", car);
                           <button
                             onClick={() => removeCar(index)}
                             className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
+                            title="ລຶບລົດນີ້ອອກ"
                           >
                             <X size={16} />
                           </button>
@@ -483,14 +595,18 @@ console.log("sdwdsaaaaaaaaaaaaaa", car);
           {/* Summary */}
           {formData.cars.length > 0 && (
             <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 font-notosanslao">ສະຫຼຸບຂໍ້ມູນ</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 font-notosanslao">
+                ສະຫຼຸບຂໍ້ມູນ
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="p-4 bg-blue-50 rounded-lg">
                   <div className="flex items-center gap-2">
                     <Package className="text-blue-600" size={20} />
                     <div className="font-notosanslao">
                       <p className="text-sm text-blue-600">ຈຳນວນລົດ</p>
-                      <p className="text-xl font-semibold text-blue-900">{formData.cars.length}</p>
+                      <p className="text-xl font-semibold text-blue-900">
+                        {formData.cars.length}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -500,7 +616,7 @@ console.log("sdwdsaaaaaaaaaaaaaa", car);
                     <div className="font-notosanslao">
                       <p className="text-sm text-green-600">ເປີດໃຊ້ງານ</p>
                       <p className="text-xl font-semibold text-green-900">
-                        {formData.cars.filter(c => c.isActive).length}
+                        {formData.cars.filter((c) => c.isActive).length}
                       </p>
                     </div>
                   </div>
@@ -511,7 +627,7 @@ console.log("sdwdsaaaaaaaaaaaaaa", car);
                     <div className="font-notosanslao">
                       <p className="text-sm text-red-600">ປິດໃຊ້ງານ</p>
                       <p className="text-xl font-semibold text-red-900">
-                        {formData.cars.filter(c => !c.isActive).length}
+                        {formData.cars.filter((c) => !c.isActive).length}
                       </p>
                     </div>
                   </div>
@@ -520,12 +636,12 @@ console.log("sdwdsaaaaaaaaaaaaaa", car);
                   <div className="flex items-center gap-2">
                     <Car className="text-gray-600" size={20} />
                     <div className="font-notosanslao">
-                      <p className="text-sm text-gray-600">ມີແລ້ວ</p>
+                      <p className="text-sm text-gray-600">มีเชื่อมต่อแล้ว</p>
                       <p className="text-xl font-semibold text-gray-900">
-                        {formData.supplierId ? 
-                          Array.isArray(suppliersproducts) ? 
-                            suppliersproducts.filter(sp => sp.supplierId === parseInt(formData.supplierId)).length 
-                            : 0 
+                        {formData.supplierId && Array.isArray(suppliersproducts)
+                          ? suppliersproducts.filter(
+                              (sp) => sp.supplierId === parseInt(formData.supplierId)
+                            ).length
                           : 0}
                       </p>
                     </div>
@@ -535,18 +651,27 @@ console.log("sdwdsaaaaaaaaaaaaaa", car);
 
               {/* Car breakdown */}
               <div className="mt-4">
-                <h4 className="text-sm font-medium text-gray-700 mb-2 font-notosanslao">ລາຍລະອຽດລົດ:</h4>
+                <h4 className="text-sm font-medium text-gray-700 mb-2 font-notosanslao">
+                  ລາຍລະອຽດລົດ:
+                </h4>
                 <div className="space-y-2">
                   {formData.cars.map((car, index) => (
-                    <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                    <div
+                      key={index}
+                      className="flex justify-between items-center p-2 bg-gray-50 rounded"
+                    >
                       <span className="text-sm text-gray-700 font-notosanslao">
-                        {car.carName} - {car.licensePlate}
+                        {car.brandName} - {car.modelName}
                       </span>
                       <div className="flex items-center gap-4 text-sm">
-                        <span className={`px-2 py-1 rounded-full text-xs font-notosanslao ${
-                          car.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                        }`}>
-                          {car.isActive ? 'ເປີດໃຊ້ງານ' : 'ປິດໃຊ້ງານ'}
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-notosanslao ${
+                            car.isActive
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {car.isActive ? "ເປີດໃຊ້ງານ" : "ປິດໃຊ້ງານ"}
                         </span>
                       </div>
                     </div>
@@ -568,9 +693,11 @@ console.log("sdwdsaaaaaaaaaaaaaa", car);
               </button>
               <button
                 onClick={handleSubmit}
-                disabled={loading || formData.cars.length === 0 || !token}
+                disabled={loading || formData.cars.length === 0 || !token || !formData.supplierId}
                 className={`px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-colors font-notosanslao ${
-                  loading || formData.cars.length === 0 || !token ? "opacity-50 cursor-not-allowed" : ""
+                  loading || formData.cars.length === 0 || !token || !formData.supplierId
+                    ? "opacity-50 cursor-not-allowed"
+                    : ""
                 }`}
               >
                 <Save size={20} />

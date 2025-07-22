@@ -128,7 +128,9 @@ exports.listSupplierProducts = async (req, res) => {
           include: {
             brandAndModels: {
               include: {
-                BrandCars: true
+                BrandCars: true,
+                
+                
               }
             },
             typecar: true,

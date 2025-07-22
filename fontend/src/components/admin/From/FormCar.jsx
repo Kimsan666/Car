@@ -217,7 +217,7 @@ const FormCar = () => {
         <div className="p-6 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">ຈັດການລົດ</h1>
+              <h1 className="text-2xl font-bold text-gray-800">ຈັດການຂໍ້ມູນລົດ</h1>
               <p className="text-sm text-gray-600">ຈັດການຂໍ້ມູນລົດຂອງຮ້ານ</p>
             </div>
 

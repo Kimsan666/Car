@@ -113,41 +113,6 @@ const CreateCar = () => {
     });
   };
 
-  // Handle number input changes
-
-  // Validation functions
-  const validateBrandSelection = () => {
-    if (!selectedBrand || brandSearch !== selectedBrand.name) {
-      setBrandSearch("");
-      setSelectedBrand(null);
-      setForm((prev) => ({ ...prev, brandCarsId: "", brandAndModelsId: "" }));
-      setSelectedModel(null);
-      setModelSearch("");
-      return false;
-    }
-    return true;
-  };
-
-  const validateTypeSelection = () => {
-    if (!selectedType || typeSearch !== selectedType.name) {
-      setTypeSearch("");
-      setSelectedType(null);
-      setForm((prev) => ({ ...prev, typeId: "" }));
-      return false;
-    }
-    return true;
-  };
-
-  const validateModelSelection = () => {
-    if (!selectedModel || modelSearch !== selectedModel.modelCar) {
-      setModelSearch("");
-      setSelectedModel(null);
-      setForm((prev) => ({ ...prev, brandAndModelsId: "" }));
-      return false;
-    }
-    return true;
-  };
-
   // Handle dropdown selections
   const handleBrandSelect = (brand) => {
     setSelectedBrand(brand);
@@ -173,47 +138,56 @@ const CreateCar = () => {
     setShowModelDropdown(false);
   };
 
-  // Handle input blur events for validation
+  // Handle input blur events for validation - แก้ไขด้วย setTimeout
   const handleBrandBlur = () => {
-    if (brandSearch && !selectedBrand) {
-      const exactMatch = brands.find(
-        (brand) => brand.name.toLowerCase() === brandSearch.toLowerCase()
-      );
-      if (exactMatch) {
-        handleBrandSelect(exactMatch);
-      } else {
-        setBrandSearch("");
-        toast.warning("ກາລຸນາເລືອກແບຣນຈາກລາຍການທີ່ມີຢູ່");
+    setTimeout(() => {
+      if (brandSearch && !selectedBrand) {
+        const exactMatch = brands.find(
+          (brand) => brand.name.toLowerCase() === brandSearch.toLowerCase()
+        );
+        if (exactMatch) {
+          handleBrandSelect(exactMatch);
+        } else {
+          setBrandSearch("");
+          toast.warning("ກາລຸນາເລືອກແບຣນຈາກລາຍການທີ່ມີຢູ່");
+        }
       }
-    }
+      setShowBrandDropdown(false);
+    }, 200); // รอ 200ms เพื่อให้ onClick ทำงานก่อน
   };
 
   const handleTypeBlur = () => {
-    if (typeSearch && !selectedType) {
-      const exactMatch = types.find(
-        (type) => type.name.toLowerCase() === typeSearch.toLowerCase()
-      );
-      if (exactMatch) {
-        handleTypeSelect(exactMatch);
-      } else {
-        setTypeSearch("");
-        toast.warning("ກາລຸນາເລືອກປະເພດຈາກລາຍການທີ່ມີຢູ່");
+    setTimeout(() => {
+      if (typeSearch && !selectedType) {
+        const exactMatch = types.find(
+          (type) => type.name.toLowerCase() === typeSearch.toLowerCase()
+        );
+        if (exactMatch) {
+          handleTypeSelect(exactMatch);
+        } else {
+          setTypeSearch("");
+          toast.warning("ກາລຸນາເລືອກປະເພດຈາກລາຍການທີ່ມີຢູ່");
+        }
       }
-    }
+      setShowTypeDropdown(false);
+    }, 200);
   };
 
   const handleModelBlur = () => {
-    if (modelSearch && !selectedModel) {
-      const exactMatch = availableModels.find(
-        (model) => model.modelCar.toLowerCase() === modelSearch.toLowerCase()
-      );
-      if (exactMatch) {
-        handleModelSelect(exactMatch);
-      } else {
-        setModelSearch("");
-        toast.warning("ກາລຸນາເລືອກລຸ້ນຈາກລາຍການທີ່ມີຢູ່");
+    setTimeout(() => {
+      if (modelSearch && !selectedModel) {
+        const exactMatch = availableModels.find(
+          (model) => model.modelCar.toLowerCase() === modelSearch.toLowerCase()
+        );
+        if (exactMatch) {
+          handleModelSelect(exactMatch);
+        } else {
+          setModelSearch("");
+          toast.warning("ກາລຸນາເລືອກລຸ້ນຈາກລາຍການທີ່ມີຢູ່");
+        }
       }
-    }
+      setShowModelDropdown(false);
+    }, 200);
   };
 
   // Handle image uploads
@@ -273,7 +247,6 @@ const CreateCar = () => {
     setForm({
       brandAndModelsId: "",
       name: "",
-
       typeId: "",
       description: "",
       brandCarsId: "",
@@ -409,7 +382,7 @@ const CreateCar = () => {
                         filteredBrands.map((brand) => (
                           <div
                             key={brand.id}
-                            onClick={() => handleBrandSelect(brand)}
+                            onMouseDown={() => handleBrandSelect(brand)} // เปลี่ยนจาก onClick เป็น onMouseDown
                             className="px-3 py-2 hover:bg-blue-50 cursor-pointer border-b last:border-b-0"
                           >
                             {brand.name}
@@ -471,7 +444,7 @@ const CreateCar = () => {
                         filteredModels.map((model) => (
                           <div
                             key={model.id}
-                            onClick={() => handleModelSelect(model)}
+                            onMouseDown={() => handleModelSelect(model)} // เปลี่ยนจาก onClick เป็น onMouseDown
                             className="px-3 py-2 hover:bg-blue-50 cursor-pointer border-b last:border-b-0"
                           >
                             {model.modelCar}
@@ -541,7 +514,7 @@ const CreateCar = () => {
                         filteredTypes.map((type) => (
                           <div
                             key={type.id}
-                            onClick={() => handleTypeSelect(type)}
+                            onMouseDown={() => handleTypeSelect(type)} // เปลี่ยนจาก onClick เป็น onMouseDown
                             className="px-3 py-2 hover:bg-blue-50 cursor-pointer border-b last:border-b-0"
                           >
                             {type.name}

@@ -101,7 +101,7 @@ const FormBrandAndModel = () => {
     <div className="container mx-auto p-4 font-notosanslao">
       <div className="bg-white rounded-lg shadow-md">
         <div className="p-6 border-b">
-          <h1 className="text-2xl font-bold text-gray-800">ຈັດການລຸ້ນລົດ</h1>
+          <h1 className="text-2xl font-bold text-gray-800">ຈັດການຂໍ້ມູນລຸ້ນລົດ</h1>
         </div>
 
         <div className="p-6">

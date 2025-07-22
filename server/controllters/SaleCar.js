@@ -15,21 +15,23 @@ exports.saveSaleCar = async (req, res) => {
       costPrice,
     } = req.body;
 
-    // ກວດສອບວ່າມີ licensePlate ຊ້ຳກັນຫຼືບໍ່
-    const existingLicensePlate = await prisma.saleCar.findUnique({
-      where: {
-        licensePlate: licensePlate,
-      },
-    });
-
-    if (existingLicensePlate) {
-      return res.status(400).json({
-        message: "ມີປ້າຍທະບຽນລົດນີ້ຢູ່ແລ້ວ",
+    // ກວດສອບວ່າມີ licensePlate ຊ້ຳກັນຫຼືບໍ່ (ເມື່ອມີການປ້ອນຂໍ້ມູນເທົ່ານັ້ນ)
+    if (licensePlate && licensePlate.trim() !== '') {
+      const existingLicensePlate = await prisma.saleCar.findUnique({
+        where: {
+          licensePlate: licensePlate,
+        },
       });
+
+      if (existingLicensePlate) {
+        return res.status(400).json({
+          message: "ມີປ້າຍທະບຽນລົດນີ້ຢູ່ແລ້ວ",
+        });
+      }
     }
 
-    // ກວດສອບວ່າມີ VIN ຊ້ຳກັນຫຼືບໍ່ (ຖ້າມີ)
-    if (vin) {
+    // ກວດສອບວ່າມີ VIN ຊ້ຳກັນຫຼືບໍ່ (ຖ້າມີການປ້ອນຂໍ້ມູນ)
+    if (vin && vin.trim() !== '') {
       const existingVin = await prisma.saleCar.findUnique({
         where: {
           vin: vin,
@@ -42,6 +44,7 @@ exports.saveSaleCar = async (req, res) => {
         });
       }
     }
+
     if (carId) {
       const car = await prisma.car.findUnique({
         where: {
@@ -76,7 +79,7 @@ exports.saveSaleCar = async (req, res) => {
       data: {
         carId: parseInt(carId),
         name: name,
-        licensePlate: licensePlate,
+        licensePlate: licensePlate || null,
         year: year ? parseInt(year) : null,
         colorCarId: colorCarId ? parseInt(colorCarId) : null,
         vin: vin || null,
@@ -210,25 +213,27 @@ exports.updateSaleCar = async (req, res) => {
       costPrice,
     } = req.body;
     const { id } = req.params;
-    // code
-    // ກວດສອບວ່າມີ licensePlate ຊ້ຳກັນຫຼືບໍ່
-    const existingLicensePlate = await prisma.saleCar.findUnique({
-      where: {
-        licensePlate: licensePlate,
-        NOT: {
-          id: Number(id),
-        },
-      },
-    });
 
-    if (existingLicensePlate) {
-      return res.status(400).json({
-        message: "ມີປ້າຍທະບຽນລົດນີ້ຢູ່ແລ້ວ",
+    // ກວດສອບວ່າມີ licensePlate ຊ້ຳກັນຫຼືບໍ່ (ເມື່ອມີການປ້ອນຂໍ້ມູນເທົ່ານັ້ນ)
+    if (licensePlate && licensePlate.trim() !== '') {
+      const existingLicensePlate = await prisma.saleCar.findUnique({
+        where: {
+          licensePlate: licensePlate,
+          NOT: {
+            id: Number(id),
+          },
+        },
       });
+
+      if (existingLicensePlate) {
+        return res.status(400).json({
+          message: "ມີປ້າຍທະບຽນລົດນີ້ຢູ່ແລ້ວ",
+        });
+      }
     }
 
-    // ກວດສອບວ່າມີ VIN ຊ້ຳກັນຫຼືບໍ່ (ຖ້າມີ)
-    if (vin) {
+    // ກວດສອບວ່າມີ VIN ຊ້ຳກັນຫຼືບໍ່ (ຖ້າມີການປ້ອນຂໍ້ມູນ)
+    if (vin && vin.trim() !== '') {
       const existingVin = await prisma.saleCar.findUnique({
         where: {
           vin: vin,
@@ -267,7 +272,7 @@ exports.updateSaleCar = async (req, res) => {
       data: {
         carId: parseInt(carId),
         name: name,
-        licensePlate: licensePlate,
+        licensePlate: licensePlate || null,
         year: year ? parseInt(year) : null,
         colorCarId: colorCarId ? parseInt(colorCarId) : null,
         vin: vin || null,
@@ -275,16 +280,18 @@ exports.updateSaleCar = async (req, res) => {
         status: status || "Available",
         price: parseFloat(price),
         costPrice: parseFloat(costPrice),
-        
       },
-     
     });
-    res.send("Update Success");
+
+    res.status(200).json({
+      message: "ອັບເດດຂໍ້ມູນລົດສຳເລັດແລ້ວ",
+      data: car,
+    });
   } catch (err) {
     console.log(err);
-    res
-      .status(500)
-      .json({ message: "Server error updateProduct in controller!!!" });
+    res.status(500).json({
+      message: "Server error updateSaleCar in controller!!!",
+    });
   }
 };
 

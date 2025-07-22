@@ -11,6 +11,8 @@ exports.createOrder = async (req, res) => {
 
     const userId = req.user.id; // ຈາກ middleware auth
 
+    console.log("📦 Creating order with data:", { customerId, totalAmount, items, userId });
+
     // ກວດສອບຂໍ້ມູນທີ່ຈຳເປັນ
     if (!customerId || !totalAmount || !items || items.length === 0) {
       return res.status(400).json({
@@ -31,14 +33,29 @@ exports.createOrder = async (req, res) => {
       });
     }
 
-    // ກວດສອບວ່າລົດທັງໝົດມີຢູ່ແລະສາມາດຂາຍໄດ້
+    console.log("✅ Customer found:", customer.fname, customer.lname);
+
+    // ✅ แก้ไข: ใช้ saleCar แทน car เพราะ status อยู่ใน saleCar
     const carIds = items.map(item => parseInt(item.carId));
-    const cars = await prisma.car.findMany({
+    console.log("🚗 Looking for sale cars:", carIds);
+
+    const cars = await prisma.saleCar.findMany({
       where: {
         id: { in: carIds },
-        status: "Available"
+        status: "Available" // ✅ status อยู่ใน saleCar model
+      },
+      include: {
+        car: {
+          include: {
+            brandCars: true,
+            brandAndModels: true,
+            typecar: true
+          }
+        }
       }
     });
+
+    console.log("🔍 Found available cars:", cars.length);
 
     if (cars.length !== carIds.length) {
       return res.status(400).json({
@@ -58,36 +75,49 @@ exports.createOrder = async (req, res) => {
         }
       });
 
-      // ສ້າງ ItemOnOrder ສຳລັບແຕ່ລະລາຍການ
+      console.log("📋 Order created:", order.id);
+
+      // ✅ แก้ไข: ใช้ saleCar แทน car
       const orderItems = [];
       for (const item of items) {
-        // ສ້າງ ItemOnOrder ສຳລັບແຕ່ລະ quantity
-        for (let i = 0; i < item.quantity; i++) {
-          const orderItem = await prisma.itemOnOrder.create({
-            data: {
-              carId: parseInt(item.carId),
-              // ຖ້າຕ້ອງການ orderId, ຕ້ອງແກ້ໄຂ schema ກ່ອນ
-              // orderId: order.id
-            }
-          });
-          orderItems.push(orderItem);
-        }
-
-        // ອັບເດດສະຖານະລົດເປັນ "Sold"
-        await prisma.car.update({
-          where: { id: parseInt(item.carId) },
-          data: { status: "Sold" }
+        const orderItem = await prisma.itemOnOrder.create({
+          data: {
+            orderId: order.id, // ✅ เพิ่ม orderId
+            saleCarId: parseInt(item.carId), // ✅ ใช้ saleCarId แทน carId
+            quantity: parseInt(item.quantity) || 1,
+            price: parseFloat(item.price) || 0
+          }
         });
+        orderItems.push(orderItem);
+
+        // ✅ อัพเดตสถานะ saleCar เป็น "Sold"
+        await prisma.saleCar.update({
+          where: { id: parseInt(item.carId) },
+          data: { 
+            status: "Sold",
+            soldDate: new Date() // เพิ่มวันที่ขาย
+          }
+        });
+
+        console.log(`✅ Sale car ${item.carId} marked as sold`);
       }
 
       return { order, orderItems };
     });
 
-    // ດຶງຂໍ້ມູນ Order ພ້ອມລາຍລະອຽດ
+    // ดຶງຂໍ້ມູນ Order ພ້ອມລາຍລະອຽດ
     const orderWithDetails = await prisma.order.findUnique({
       where: { id: result.order.id },
       include: {
-        customer: true,
+        customer: {
+          select: {
+            id: true,
+            fname: true,
+            lname: true,
+            number: true,
+            email: true
+          }
+        },
         orderdBy: {
           select: {
             id: true,
@@ -102,17 +132,17 @@ exports.createOrder = async (req, res) => {
         },
         ItemOnOrder: {
           include: {
-            Car: {
+            saleCar: { // ✅ ใช้ saleCar แทน Car
               include: {
-                brandCars: true,
-                colorCar: true,
-                typecar: true,
-                brandAndModels: {
+                car: {
                   include: {
-                    BrandCars: true
+                    brandCars: true,
+                    typecar: true,
+                    brandAndModels: true,
+                    images: true
                   }
                 },
-                images: true
+                colorCar: true
               }
             }
           }
@@ -120,14 +150,16 @@ exports.createOrder = async (req, res) => {
       }
     });
 
+    console.log("🎉 Order created successfully:", orderWithDetails.id);
+
     res.status(201).json({
       success: true,
-      message: "ສ້າງອໍເດີສຳເລັດແລ້ວ",
+      message: `ສ້າງອໍເດີສຳເລັດແລ້ວ #${orderWithDetails.id}`,
       data: orderWithDetails
     });
 
   } catch (err) {
-    console.error("Error creating order:", err);
+    console.error("❌ Error creating order:", err);
     
     // ກວດສອບ Prisma error
     if (err.code === 'P2002') {
@@ -139,7 +171,7 @@ exports.createOrder = async (req, res) => {
 
     res.status(500).json({
       success: false,
-      message: "ເກີດຂໍ້ຜິດພາດໃນເຊີເວີ"
+      message: "ເກີດຂໍ້ຜິດພາດໃນເຊີເວີ: " + err.message
     });
   }
 };
@@ -170,7 +202,15 @@ exports.listOrders = async (req, res) => {
       skip: (parseInt(page) - 1) * parseInt(limit),
       take: parseInt(limit),
       include: {
-        customer: true,
+        customer: {
+          select: {
+            id: true,
+            fname: true,
+            lname: true,
+            number: true,
+            email: true
+          }
+        },
         orderdBy: {
           select: {
             id: true,
@@ -185,19 +225,17 @@ exports.listOrders = async (req, res) => {
         },
         ItemOnOrder: {
           include: {
-            Car: {
+            saleCar: { // ✅ ใช้ saleCar
               include: {
-                brandCars: true,
-                colorCar: true,
-                typecar: true,
-                brandAndModels: {
+                car: {
                   include: {
-                    BrandCars: true
+                    brandCars: true,
+                    typecar: true,
+                    brandAndModels: true,
+                    images: { take: 1 }
                   }
                 },
-                images: {
-                  take: 1
-                }
+                colorCar: true
               }
             }
           }
@@ -252,17 +290,17 @@ exports.getOrderById = async (req, res) => {
         },
         ItemOnOrder: {
           include: {
-            Car: {
+            saleCar: { // ✅ ใช้ saleCar
               include: {
-                brandCars: true,
-                colorCar: true,
-                typecar: true,
-                brandAndModels: {
+                car: {
                   include: {
-                    BrandCars: true
+                    brandCars: true,
+                    typecar: true,
+                    brandAndModels: true,
+                    images: true
                   }
                 },
-                images: true
+                colorCar: true
               }
             }
           }
@@ -332,11 +370,14 @@ exports.updateOrderStatus = async (req, res) => {
         },
         ItemOnOrder: {
           include: {
-            Car: {
+            saleCar: { // ✅ ใช้ saleCar
               include: {
-                brandCars: true,
-                colorCar: true,
-                typecar: true
+                car: {
+                  include: {
+                    brandCars: true,
+                    typecar: true
+                  }
+                }
               }
             }
           }
@@ -411,38 +452,42 @@ exports.getSalesStatistics = async (req, res) => {
       }
     });
 
-    // ລົດທີ່ຂາຍດີທີ່ສຸດ
+    // ✅ ລົດທີ່ຂາຍດີທີ່ສຸດ - ใช้ saleCarId แทน carId
     const topSellingCars = await prisma.itemOnOrder.groupBy({
-      by: ['carId'],
+      by: ['saleCarId'],
       where: {
         createdAt: dateFilter.createdAt
       },
       _count: {
-        carId: true
+        saleCarId: true
       },
       orderBy: {
         _count: {
-          carId: 'desc'
+          saleCarId: 'desc'
         }
       },
       take: 5
     });
 
-    // ດຶງລາຍລະອຽດລົດທີ່ຂາຍດີ
+    // ดḌึงลายละเอียดลีดที่ขายดี
     const topCarsDetails = await Promise.all(
       topSellingCars.map(async (item) => {
-        const car = await prisma.car.findUnique({
-          where: { id: item.carId },
+        const saleCar = await prisma.saleCar.findUnique({
+          where: { id: item.saleCarId },
           include: {
-            brandCars: true,
-            colorCar: true,
-            typecar: true,
-            images: { take: 1 }
+            car: {
+              include: {
+                brandCars: true,
+                typecar: true,
+                images: { take: 1 }
+              }
+            },
+            colorCar: true
           }
         });
         return {
-          car,
-          soldCount: item._count.carId
+          saleCar,
+          soldCount: item._count.saleCarId
         };
       })
     );
@@ -480,7 +525,7 @@ exports.deleteOrder = async (req, res) => {
       include: {
         ItemOnOrder: {
           include: {
-            Car: true
+            saleCar: true // ✅ ใช้ saleCar
           }
         }
       }
@@ -495,24 +540,23 @@ exports.deleteOrder = async (req, res) => {
 
     // ໃຊ້ transaction ເພື່ອຄືນສະຖານະລົດແລະລົບອໍເດີ
     await prisma.$transaction(async (prisma) => {
-      // ຄືນສະຖານະລົດເປັນ Available
+      // ✅ ຄືນສະຖານະ saleCar เປັນ Available
       for (const item of order.ItemOnOrder) {
-        await prisma.car.update({
-          where: { id: item.carId },
-          data: { status: "Available" }
+        await prisma.saleCar.update({
+          where: { id: item.saleCarId }, // ✅ ใช้ saleCarId
+          data: { 
+            status: "Available",
+            soldDate: null // ลบวันที่ขาย
+          }
         });
       }
 
       // ລົບ ItemOnOrder
       await prisma.itemOnOrder.deleteMany({
-        where: { 
-          carId: { 
-            in: order.ItemOnOrder.map(item => item.carId) 
-          } 
-        }
+        where: { orderId: parseInt(id) }
       });
 
-      // ລົບ Order
+      // ລົบ Order
       await prisma.order.delete({
         where: { id: parseInt(id) }
       });
@@ -527,7 +571,7 @@ exports.deleteOrder = async (req, res) => {
     console.error("Error deleting order:", err);
     res.status(500).json({
       success: false,
-      message: "ເກີດຂໍ້ຜິດພາດໃນເຊີເວີ"
+      message: "ເກີດຂໍ້ຜິດພາດໃນການລົບອໍເດີ"
     });
   }
 };

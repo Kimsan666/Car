@@ -192,21 +192,6 @@ exports.readCustomer = async (req, res) => {
       },
       include: {
         images: true,
-        Order: {
-          include: {
-            Car: {
-              include: {
-                brandAndModels: {
-                  include: {
-                    BrandCars: true
-                  }
-                },
-                colorCar: true,
-                typecar: true,
-              }
-            }
-          }
-        }
       },
     });
     
@@ -906,7 +891,7 @@ exports.RemoveImage = async (req, res) => {
       .json({ message: "Server error RemoveImage in controller!!!" });
   }
 };
-exports.UploadImaged = async (req, res) => {
+exports.UploadImages = async (req, res) => {
   try {
     console.log(req.body);
     const result = await cloudinary.uploader.upload(req.body.image, {
