@@ -12,6 +12,7 @@ exports.saveCar = async (req, res) => {
     const {
       brandAndModelsId,
       typeId,
+      year,
       description,
       brandCarsId,
       images,
@@ -66,6 +67,7 @@ exports.saveCar = async (req, res) => {
     // ສ້າງຂໍ້ມູນລົດພ້ອມຮູບພາບ
     const car = await prisma.car.create({
       data: {
+        year: year,
         brandAndModelsId: brandAndModelsId ? parseInt(brandAndModelsId) : null,
         typeId: typeId ? parseInt(typeId) : null,
         description: description || null,
@@ -177,7 +179,7 @@ exports.updateCar = async (req, res) => {
   try {
     const {
       brandAndModelsId,
-
+      year,
       typeId,
       description,
       brandCarsId,
@@ -186,7 +188,6 @@ exports.updateCar = async (req, res) => {
     } = req.body;
     const { id } = req.params;
     // code
-    
 
     // ກວດສອບວ່າ Brand and Model ມີຢູ່ຈິງຫຼືບໍ່
     if (brandAndModelsId) {
@@ -249,6 +250,7 @@ exports.updateCar = async (req, res) => {
         id: Number(req.params.id),
       },
       data: {
+        year: year,
         brandAndModelsId: brandAndModelsId ? parseInt(brandAndModelsId) : null,
         typeId: typeId ? parseInt(typeId) : null,
         description: description || null,
@@ -315,7 +317,6 @@ exports.removeCar = async (req, res) => {
       if (!car) {
         throw new Error("ບໍ່ພົບລົດທີ່ຕ້ອງການລົບ");
       }
-
 
       if (car.supplierProducts.length > 0) {
         throw new Error("ບໍ່ສາມາດລົບລົດໄດ້ເພາະຍັງເຊື່ອມຕໍ່ກັບຜູ້ສະໜອງ");

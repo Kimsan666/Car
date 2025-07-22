@@ -83,7 +83,7 @@ export const confirmReservation = async (token, cartId) => {
   return await convertCartToOrder(token, cartId);
 };
 
-// ຍົກເລີກການຈອງ (alias สຳลັບ cancelCart)
+// ຍົກເລີກການຈອງ (alias สຳລັບ cancelCart)
 export const cancelReservation = async (token, cartId) => {
   return await cancelCart(token, cartId);
 };
@@ -103,7 +103,7 @@ export const getReservationById = async (token, id) => {
   return await getCartById(token, id);
 };
 
-// ອັບເດດການຈອງ (alias สຳລັບ updateCart)
+// ອັບເດດການຈອງ (alias สຳลັບ updateCart)
 export const updateReservation = async (token, cartId, updateData) => {
   return await updateCart(token, cartId, updateData);
 };

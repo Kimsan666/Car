@@ -33,6 +33,7 @@ const CreateCar = () => {
 
   const [form, setForm] = useState({
     brandAndModelsId: "",
+    year:"",
     typeId: "",
     description: "",
     brandCarsId: "",
@@ -457,6 +458,22 @@ const CreateCar = () => {
                       )}
                     </div>
                   )}
+                </div>
+                {/* Year */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    ປີ
+                  </label>
+                  <input
+                    type="number"
+                    name="year"
+                    value={form.year}
+                    onChange={handleChange}
+                    placeholder="2020"
+                    min="1900"
+                    max="2030"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
               </div>
             </div>

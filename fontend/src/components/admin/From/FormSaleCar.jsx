@@ -930,9 +930,7 @@ const FormSaleCar = () => {
                   <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     ສີ
                   </th>
-                  <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    ປີ
-                  </th>
+                 
                   <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     ລາຄາຕົ້ນທຶນ
                   </th>
@@ -1001,9 +999,7 @@ const FormSaleCar = () => {
                         {saleCar.colorCar?.name || "-"}
                       </td>
 
-                      <td className="py-4 px-6 text-sm text-gray-900">
-                        {saleCar.year || "-"}
-                      </td>
+                      
 
                       <td className="py-4 px-6 text-sm text-gray-900 font-medium">
                         {saleCar.costPrice

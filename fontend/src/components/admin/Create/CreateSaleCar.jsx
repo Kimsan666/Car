@@ -30,7 +30,6 @@ const CreateSaleCar = () => {
     carId: "",
     name: "",
     licensePlate: "",
-    year: "",
     colorCarId: "",
     vin: "",
     engineNumber: "",
@@ -149,7 +148,6 @@ const CreateSaleCar = () => {
       carId: "",
       name: "",
       licensePlate: "",
-      year: "",
       colorCarId: "",
       vin: "",
       engineNumber: "",
@@ -198,7 +196,6 @@ const CreateSaleCar = () => {
         ...form,
         carId: parseInt(form.carId),
         colorCarId: form.colorCarId ? parseInt(form.colorCarId) : null,
-        year: form.year ? parseInt(form.year) : null,
         price: parseFloat(parseFormattedNumber(form.price)),
         costPrice: parseFloat(parseFormattedNumber(form.costPrice)),
       };
@@ -398,22 +395,7 @@ const CreateSaleCar = () => {
                   />
                 </div>
 
-                {/* Year */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    ປີ
-                  </label>
-                  <input
-                    type="number"
-                    name="year"
-                    value={form.year}
-                    onChange={handleChange}
-                    placeholder="2020"
-                    min="1900"
-                    max="2030"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+               
 
                 {/* VIN */}
                 <div>

@@ -96,6 +96,7 @@ model Car {
   brandAndModelsId Int?
   typecar          TypeCar?          @relation(fields: [typeId], references: [id])
   typeId           Int?
+  year             String?
   description      String?
   supplierProducts SupplierProduct[]
   imaged           Imaged[]
@@ -113,7 +114,7 @@ model saleCar {
   id           Int           @id @default(autoincrement())
   name         String?
   licensePlate String?       @unique
-  year         Int?
+  
   colorCar     ColorCar?     @relation(fields: [colorCarId], references: [id])
   colorCarId   Int?
   vin          String?       @unique

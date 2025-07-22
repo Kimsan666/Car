@@ -6,7 +6,7 @@ exports.saveSaleCar = async (req, res) => {
       carId,
       name,
       licensePlate,
-      year,
+     
       colorCarId,
       vin,
       engineNumber,
@@ -80,7 +80,7 @@ exports.saveSaleCar = async (req, res) => {
         carId: parseInt(carId),
         name: name,
         licensePlate: licensePlate || null,
-        year: year ? parseInt(year) : null,
+  
         colorCarId: colorCarId ? parseInt(colorCarId) : null,
         vin: vin || null,
         engineNumber: engineNumber || null,
@@ -204,7 +204,7 @@ exports.updateSaleCar = async (req, res) => {
       carId,
       name,
       licensePlate,
-      year,
+   
       colorCarId,
       vin,
       engineNumber,
@@ -273,7 +273,7 @@ exports.updateSaleCar = async (req, res) => {
         carId: parseInt(carId),
         name: name,
         licensePlate: licensePlate || null,
-        year: year ? parseInt(year) : null,
+        
         colorCarId: colorCarId ? parseInt(colorCarId) : null,
         vin: vin || null,
         engineNumber: engineNumber || null,
